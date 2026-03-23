@@ -1,0 +1,26 @@
+# Vivado build artifacts
+*.jou
+*.log
+*.str
+*.bit
+*.bin
+*.ltx
+*.dcp
+*.pb
+*.wdb
+*.xpr
+vivado_project/
+build/
+rv16_mcu/
+rv64_mcu/
+rv64fp_mcu/
+.Xil/
+*.runs/
+*.cache/
+*.hw/
+*.ip_user_files/
+*.sim/
+reports/
+__pycache__/
+*.pyc
+node_modules/
