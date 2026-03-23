@@ -2,7 +2,7 @@
 
 AI-powered RISC-V processor designs in Verilog and VHDL, targeting the Basys 3 board (Xilinx Artix-7 XC7A35T).
 
-Built with [Claude Code](https://claude.ai/claude-code) (Anthropic, Claude Opus 4).
+Built with [Claude Code](https://claude.ai/claude-code) (Anthropic, Claude Opus 4.6).
 
 ## Projects
 
