@@ -8,6 +8,7 @@
 module memory (
     input  wire        clk,
     input  wire        rst,
+    input  wire        stall_ex,       // EX stage stalled (EX/MEM holds stale data)
 
     // From EX/MEM
     input  wire [63:0] exmem_alu_result,
@@ -56,7 +57,23 @@ module memory (
 
     // ========================================================================
     // MEM/WB Pipeline Register
+    //
+    // When EX is stalled, EX/MEM holds stale data.  We pass it through to
+    // MEM/WB on the FIRST stall cycle, then insert bubbles on subsequent
+    // stall cycles so the same instruction isn't written back multiple times.
     // ========================================================================
+    reg exmem_consumed;  // tracks if current EX/MEM content was already passed
+
+    always @(posedge clk) begin
+        if (rst) begin
+            exmem_consumed <= 1'b0;
+        end else if (!stall_ex) begin
+            exmem_consumed <= 1'b0;  // new data in EX/MEM, not yet consumed
+        end else begin
+            exmem_consumed <= 1'b1;  // after first stall cycle, mark consumed
+        end
+    end
+
     always @(posedge clk) begin
         if (rst) begin
             memwb_alu_result <= 64'd0;
@@ -67,7 +84,14 @@ module memory (
             memwb_wb_sel     <= 3'd0;
             memwb_valid      <= 1'b0;
             memwb_is_fp_load <= 1'b0;
+        end else if (stall_ex && exmem_consumed) begin
+            // EX/MEM is stale and already consumed — insert bubble
+            memwb_reg_we     <= 1'b0;
+            memwb_fp_reg_we  <= 1'b0;
+            memwb_valid      <= 1'b0;
+            memwb_is_fp_load <= 1'b0;
         end else begin
+            // Normal: pass EX/MEM through to MEM/WB
             memwb_alu_result <= exmem_alu_result;
             memwb_mem_rdata  <= mem_rdata;
             memwb_rd         <= exmem_rd;

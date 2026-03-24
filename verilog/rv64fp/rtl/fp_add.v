@@ -79,9 +79,8 @@ module fp_add (
     wire        lzc_zero;
     reg  [63:0] lzc_input;
 
-    // Rounding instance wires
-    wire        round_up;
-    reg         rnd_sign, rnd_guard, rnd_round, rnd_sticky, rnd_lsb;
+    // Rounding function (shared logic)
+    `include "fp_round_func.vh"
 
     // ========================================================================
     // Instantiate leading-zero counter
@@ -90,19 +89,6 @@ module fp_add (
         .data  (lzc_input),
         .count (lzc_count),
         .zero  (lzc_zero)
-    );
-
-    // ========================================================================
-    // Instantiate rounding module
-    // ========================================================================
-    fp_round u_round (
-        .sign      (rnd_sign),
-        .guard     (rnd_guard),
-        .round_bit (rnd_round),
-        .sticky    (rnd_sticky),
-        .lsb       (rnd_lsb),
-        .rm        (rm),
-        .round_up  (round_up)
     );
 
     // ========================================================================
@@ -459,16 +445,17 @@ module fp_add (
                             // --- Normalization ---
                             // sum_raw is 55 bits. Normal result has the leading 1
                             // somewhere in bits [54:0].
-                            if (sum_raw[54]) begin
-                                // Carry-out from addition: shift right by 1
+                            if (sum_raw[53]) begin
+                                // Carry-out from addition: leading 1 at bit 53
+                                // Shift right by 1 to normalize (implicit bit at 52)
                                 norm_mant  = sum_raw >> 1;
                                 norm_exp   = sum_exp + 11'd1;
                                 // The bit shifted out becomes guard; old guard->round; etc.
                                 s3_guard   = sum_raw[0];
                                 s3_round   = guard_s2;
                                 s3_sticky  = round_s2 | sticky_s2;
-                            end else if (sum_raw[53]) begin
-                                // Already normalized (leading 1 in bit 53)
+                            end else if (sum_raw[52]) begin
+                                // Already normalized (leading 1 in bit 52 = implicit bit)
                                 norm_mant  = sum_raw;
                                 norm_exp   = sum_exp;
                                 s3_guard   = guard_s2;
@@ -496,10 +483,10 @@ module fp_add (
                                 // shift_amt = 53 - (54 - lzc_count) = lzc_count - 1
                                 // But lzc_count could be 0 if bit 63 is set (handled above).
 
-                                if (lzc_count <= 7'd1) begin
+                                if (lzc_count <= 7'd2) begin
                                     shift_amt = 7'd0;
                                 end else begin
-                                    shift_amt = lzc_count - 7'd1;
+                                    shift_amt = lzc_count - 7'd2;
                                 end
 
                                 // Check if shift would make exponent go below 1
@@ -530,17 +517,8 @@ module fp_add (
                             end
 
                             // --- Apply rounding ---
-                            // Drive the rounding module inputs
-                            rnd_sign   = final_sign;
-                            rnd_guard  = s3_guard;
-                            rnd_round  = s3_round;
-                            rnd_sticky = s3_sticky;
-                            rnd_lsb    = norm_mant[0];
-
-                            // round_up comes from the combinational fp_round instance
-
-                            // Add rounding increment
-                            if (round_up) begin
+                            // Add rounding increment (use shared rounding function)
+                            if (fp_do_round(final_sign, s3_guard, s3_round, s3_sticky, norm_mant[0], rm)) begin
                                 {norm_exp, norm_mant} = {norm_exp, norm_mant} + 1;
                                 // Check if rounding caused carry (mantissa overflow)
                                 if (norm_mant[54]) begin

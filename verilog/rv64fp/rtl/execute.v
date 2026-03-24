@@ -76,6 +76,26 @@ module execute (
                      BR_JAL  = 4'd3, BR_JALR = 4'd4, BR_BLT  = 4'd5,
                      BR_BGE  = 4'd6, BR_BLTU = 4'd7, BR_BGEU = 4'd8;
 
+    // FPU operation classifications (must match fpu_top.v)
+    localparam [4:0] FP_FEQ_E   = 5'd14, FP_FLT_E   = 5'd15, FP_FLE_E  = 5'd16,
+                     FP_MIN_E   = 5'd12, FP_MAX_E   = 5'd13, FP_SGNJ_E = 5'd9,
+                     FP_SGNJN_E = 5'd10, FP_SGNJX_E = 5'd11, FP_FCLASS_E = 5'd25;
+
+    // ========================================================================
+    // Forward-declared wires (xvlog requires declaration before use)
+    // ========================================================================
+    wire [63:0] fpu_result;
+    wire        fpu_done_w;
+    wire        fpu_busy_w;
+    wire [4:0]  fpu_flags_w;
+    wire        fpu_result_is_int;
+    wire        fpu_want_start;
+    wire        fp_op_is_cmp;
+    wire        fp_op_is_misc;
+    wire        fp_op_is_combinational;
+    wire        fpu_multicycle_starting;
+    wire        fpu_busy_combined;
+
     // ========================================================================
     // ALU Input Muxes
     // ========================================================================
@@ -141,16 +161,42 @@ module execute (
     // ========================================================================
     // FPU Instance
     // ========================================================================
-    wire [63:0] fpu_result;
-    wire        fpu_done_w;
-    wire        fpu_busy_w;
-    wire [4:0]  fpu_flags_w;
-    wire        fpu_result_is_int;
+
+    // Detect whether the current FP op is combinational (no stall needed)
+    assign fp_op_is_cmp  = (idex_fp_op == FP_FEQ_E) || (idex_fp_op == FP_FLT_E) ||
+                           (idex_fp_op == FP_FLE_E) || (idex_fp_op == FP_MIN_E) ||
+                           (idex_fp_op == FP_MAX_E);
+    assign fp_op_is_misc = (idex_fp_op == FP_SGNJ_E) || (idex_fp_op == FP_SGNJN_E) ||
+                           (idex_fp_op == FP_SGNJX_E) || (idex_fp_op == FP_FCLASS_E);
+    assign fp_op_is_combinational = fp_op_is_cmp || fp_op_is_misc;
+
+    // Registered flag: tracks whether a multicycle FPU op has been started
+    // for the instruction currently in ID/EX.  Prevents re-start when the
+    // FPU finishes and the pipeline advances.  Cleared when the pipeline
+    // advances (stall_ex drops) or on flush/reset.
+    reg fpu_started_r;
+    always @(posedge clk) begin
+        if (rst || flush_ex)
+            fpu_started_r <= 1'b0;
+        else if (!stall_ex)
+            fpu_started_r <= 1'b0;        // pipeline advanced; new instruction
+        else if (fpu_want_start)
+            fpu_started_r <= 1'b1;        // mark that we already started
+    end
+
+    // FPU start: fires once for each FP instruction.  Gated by registered
+    // subunit busy and the started flag (no combinational loops).
+    assign fpu_want_start = idex_fp_en & idex_valid & ~fpu_busy_w & ~fpu_started_r;
+
+    // Combinational busy: includes the first cycle of a multicycle start so
+    // that stall_ex goes high immediately (no 1-cycle gap).
+    assign fpu_multicycle_starting = fpu_want_start & ~fp_op_is_combinational;
+    assign fpu_busy_combined       = fpu_busy_w | fpu_multicycle_starting;
 
     fpu_top u_fpu (
         .clk          (clk),
         .rst          (rst),
-        .start        (idex_fp_en & idex_valid & ~stall_ex),
+        .start        (fpu_want_start),
         .fp_op        (idex_fp_op),
         .rm           (idex_fp_rm),
         .fp_a         (idex_fp_rs1_data),
@@ -164,7 +210,7 @@ module execute (
         .result_is_int(fpu_result_is_int)
     );
 
-    assign fpu_busy      = fpu_busy_w;
+    assign fpu_busy      = fpu_busy_combined;
     assign fpu_flags_out = fpu_flags_w;
     assign fpu_done      = fpu_done_w;
 

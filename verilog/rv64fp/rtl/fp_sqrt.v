@@ -1,8 +1,7 @@
 `timescale 1ns / 1ps
 //
 // fp_sqrt.v — FSQRT.D  IEEE 754 double-precision square root
-// Non-restoring digit-recurrence, 1 bit per cycle (~55 cycles).
-// Instantiates fp_round for final rounding.
+// Restoring square root, 1 bit per cycle (55 iterations).
 //
 
 module fp_sqrt (
@@ -40,37 +39,27 @@ module fp_sqrt (
     // Iteration state
     // -----------------------------------------------------------------
     reg signed [12:0] res_exp;
-    reg [113:0]       remainder;    // partial remainder, wide enough
-    reg [56:0]        root;         // partial root (55 result bits + extras)
-    reg [5:0]         iter_count;   // counts down from 55
+    reg [56:0]        remainder;    // partial remainder (57 bits: enough for trial = {root, 01} up to 57 bits)
+    reg [54:0]        root;         // accumulated root bits (55 bits)
+    reg [109:0]       radicand;     // 110-bit radicand, shifted out 2 bits/cycle
+    reg [5:0]         iter_count;   // iteration counter
 
     reg        special_case;
     reg [63:0] special_result;
     reg [4:0]  special_flags;
 
     // -----------------------------------------------------------------
-    // Rounding
+    // Rounding function (shared logic)
     // -----------------------------------------------------------------
-    wire round_up;
-    reg  r_guard, r_round, r_sticky, r_lsb, r_sign;
-    reg  [2:0] r_rm;
-
-    fp_round u_round (
-        .sign      (r_sign),
-        .guard     (r_guard),
-        .round_bit (r_round),
-        .sticky    (r_sticky),
-        .lsb       (r_lsb),
-        .rm        (r_rm),
-        .round_up  (round_up)
-    );
+    `include "fp_round_func.vh"
 
     // -----------------------------------------------------------------
     // FSM
     // -----------------------------------------------------------------
     localparam S_IDLE    = 2'd0;
-    localparam S_ITERATE = 2'd1;
-    localparam S_FINISH  = 2'd2;
+    localparam S_SETUP   = 2'd1;
+    localparam S_ITERATE = 2'd2;
+    localparam S_FINISH  = 2'd3;
     reg [1:0] state;
 
     // -----------------------------------------------------------------
@@ -84,14 +73,15 @@ module fp_sqrt (
             result     <= 64'b0;
             flags      <= 5'b0;
             iter_count <= 6'd0;
-            root       <= 57'b0;
-            remainder  <= 114'b0;
+            root       <= 55'b0;
+            remainder  <= 57'b0;
+            radicand   <= 110'b0;
         end else begin
             done <= 1'b0;
 
             case (state)
                 // =====================================================
-                // IDLE
+                // IDLE: Wait for start, unpack and classify
                 // =====================================================
                 S_IDLE: begin
                     if (start) begin
@@ -107,111 +97,125 @@ module fp_sqrt (
                         a_is_zero_r <= (a[62:52] == 11'b0)   && (a[51:0] == 52'b0);
                         a_is_sub_r  <= (a[62:52] == 11'b0)   && (a[51:0] != 52'b0);
 
-                        busy       <= 1'b1;
-                        state      <= S_ITERATE;
-                        iter_count <= 6'd56;  // 56 = check specials; 55..1 = iterate
-                        root       <= 57'b0;
-                        remainder  <= 114'b0;
+                        busy  <= 1'b1;
+                        state <= S_SETUP;
                     end
                 end
 
                 // =====================================================
-                // ITERATE
+                // SETUP: Handle special cases, prepare radicand
                 // =====================================================
-                S_ITERATE: begin
-                    if (iter_count == 6'd56) begin
-                        // ---------------------------------------------------
-                        // First cycle: special cases
-                        // ---------------------------------------------------
-                        special_case   <= 1'b0;
-                        special_result <= 64'b0;
-                        special_flags  <= 5'b0;
+                S_SETUP: begin
+                    special_case   <= 1'b0;
+                    special_result <= 64'b0;
+                    special_flags  <= 5'b0;
+                    remainder      <= 57'b0;
+                    root           <= 55'b0;
 
-                        if (a_is_nan_r) begin
-                            special_case   <= 1'b1;
-                            special_result <= CANON_NAN;
-                            if (a_is_snan_r) special_flags[NV] <= 1'b1;
-                        end else if (a_sign_r && !a_is_zero_r) begin
-                            // sqrt(negative) -> NaN, NV flag
-                            special_case      <= 1'b1;
-                            special_result    <= CANON_NAN;
-                            special_flags[NV] <= 1'b1;
-                        end else if (a_is_inf_r) begin
-                            // sqrt(+Inf) -> +Inf
-                            special_case   <= 1'b1;
-                            special_result <= {1'b0, EXP_MAX, 52'b0};
-                        end else if (a_is_zero_r) begin
-                            // sqrt(+/-0) -> same zero
-                            special_case   <= 1'b1;
-                            special_result <= {a_sign_r, 63'b0};
-                        end
-
-                        if (a_is_nan_r || (a_sign_r && !a_is_zero_r) ||
-                            a_is_inf_r || a_is_zero_r) begin
-                            iter_count <= 6'd0;
-                        end else begin
-                            // Normal/subnormal: prepare for iteration
-                            // Result exponent: floor((a_exp - 1023) / 2) + 1023
-                            // If exp is odd, shift mantissa left by 1 to make it even
-                            begin : prep_blk
-                                reg [10:0] eff_exp;
-                                reg [53:0] mant_shifted;
-
-                                eff_exp = a_is_sub_r ? 11'd1 : a_exp_r;
-
-                                if (eff_exp[0] == 1'b1) begin
-                                    // Odd exponent: shift mantissa left by 1
-                                    mant_shifted = {a_mant_r, 1'b0};
-                                    res_exp <= $signed({2'b0, eff_exp} - 13'sd1) / 2 + $signed(13'sd1023);
-                                end else begin
-                                    // Even exponent
-                                    mant_shifted = {1'b0, a_mant_r};
-                                    res_exp <= $signed({2'b0, eff_exp}) / 2 + $signed(13'sd511);
-                                end
-
-                                // Load mantissa into upper bits of remainder
-                                // We need to process 55 bits of result
-                                remainder <= {mant_shifted, 60'b0};
-                            end
-                            iter_count <= 6'd55;
-                        end
-                    end else if (iter_count == 6'd0) begin
+                    if (a_is_nan_r) begin
+                        special_case   <= 1'b1;
+                        special_result <= CANON_NAN;
+                        if (a_is_snan_r) special_flags[NV] <= 1'b1;
+                        state <= S_FINISH;
+                    end else if (a_sign_r && !a_is_zero_r) begin
+                        special_case      <= 1'b1;
+                        special_result    <= CANON_NAN;
+                        special_flags[NV] <= 1'b1;
+                        state <= S_FINISH;
+                    end else if (a_is_inf_r) begin
+                        special_case   <= 1'b1;
+                        special_result <= {1'b0, EXP_MAX, 52'b0};
+                        state <= S_FINISH;
+                    end else if (a_is_zero_r) begin
+                        special_case   <= 1'b1;
+                        special_result <= {a_sign_r, 63'b0};
                         state <= S_FINISH;
                     end else begin
-                        // ---------------------------------------------------
-                        // Non-restoring square root iteration
-                        // Trial: T = (2 * Q + 1) << (iter_count - 1)
-                        // But simpler formulation:
-                        //   R' = 4*R (shift left 2)... actually for radix-2
-                        //   digit recurrence we bring in 2 bits of radicand
-                        //   per iteration.
-                        //
-                        // Standard algorithm:
-                        //   Each iteration produces 1 bit of result.
-                        //   R = 2*R - (2*Q + 1) if R >= 0 after trial
-                        //   else R = 2*R + (2*Q - 1), set bit = 0
-                        //
-                        // Simplified approach: bring in 2 bits at a time
-                        // from the radicand, test and subtract.
-                        // ---------------------------------------------------
-                        begin : iter_blk
-                            reg [113:0] trial;
-                            // trial = 2*root + 1, shifted to align
-                            trial = {root, 1'b1} << (iter_count - 6'd1);
+                        // Normal/subnormal: prepare radicand and result exponent
+                        begin : prep_blk
+                            reg [10:0] eff_exp;
+                            reg        true_exp_odd;
 
-                            if (remainder >= trial) begin
-                                remainder <= remainder - trial;
-                                root      <= {root[55:0], 1'b1};
+                            eff_exp = a_is_sub_r ? 11'd1 : a_exp_r;
+
+                            // true exponent = eff_exp - 1023
+                            // true_exp is odd when eff_exp is even (since 1023 is odd)
+                            true_exp_odd = ~eff_exp[0];
+
+                            if (true_exp_odd) begin
+                                // True exponent is odd: multiply significand by 2
+                                // Radicand S = 2 * m, in [2, 4)
+                                // 110-bit radicand: {m[52:0], 57'b0}
+                                // where m[52] is the implicit 1, so top bits are 1x...
+                                // Binary point conceptually after bit 108
+                                // Top 2 bits [109:108] = {m[52], m[51]} = 1x
+                                radicand <= {a_mant_r, 57'b0};
+
+                                // Result biased exponent:
+                                // result_true_exp = (true_exp - 1) / 2  (make it even first)
+                                // result_biased = result_true_exp + 1023
+                                //               = (eff_exp - 1024) / 2 + 1023
+                                //               = eff_exp/2 - 512 + 1023
+                                //               = eff_exp/2 + 511
+                                // eff_exp is even, so eff_exp/2 = eff_exp >> 1
+                                res_exp <= {2'b0, eff_exp[10:1]} + 13'sd511;
                             end else begin
-                                root <= {root[55:0], 1'b0};
+                                // True exponent is even: significand as-is
+                                // Radicand S = m, in [1, 2)
+                                // 110-bit radicand: {2'b01, m[51:0], 56'b0}
+                                // Top 2 bits [109:108] = 01
+                                radicand <= {2'b01, a_mant_r[51:0], 56'b0};
+
+                                // Result biased exponent:
+                                // result_true_exp = true_exp / 2
+                                // result_biased = (eff_exp - 1023) / 2 + 1023
+                                // eff_exp is odd, so (eff_exp - 1023) is even
+                                // = (eff_exp - 1023) / 2 + 1023
+                                // = (eff_exp - 1) / 2 - 511 + 1023
+                                // = (eff_exp - 1) / 2 + 512
+                                // eff_exp is odd, (eff_exp-1) is even, (eff_exp-1)/2 = eff_exp >> 1
+                                res_exp <= {2'b0, eff_exp[10:1]} + 13'sd512;
                             end
                         end
-                        iter_count <= iter_count - 6'd1;
+                        iter_count <= 6'd55;  // 55 iterations
+                        state      <= S_ITERATE;
                     end
                 end
 
                 // =====================================================
-                // FINISH
+                // ITERATE: Restoring square root, 1 bit per cycle
+                // =====================================================
+                S_ITERATE: begin
+                    begin : iter_blk
+                        reg [56:0] new_remainder;
+                        reg [56:0] trial;
+
+                        // Shift remainder left by 2, bring in top 2 bits of radicand
+                        new_remainder = {remainder[54:0], radicand[109:108]};
+
+                        // Trial value: 4*Q + 1 = {root, 2'b01}
+                        // root is 55 bits, {root, 2'b01} = 57 bits
+                        trial = {root, 2'b01};
+
+                        if (new_remainder >= trial) begin
+                            remainder <= new_remainder - trial;
+                            root      <= {root[53:0], 1'b1};
+                        end else begin
+                            remainder <= new_remainder;
+                            root      <= {root[53:0], 1'b0};
+                        end
+
+                        // Shift radicand left by 2
+                        radicand <= {radicand[107:0], 2'b0};
+                    end
+
+                    if (iter_count == 6'd1)
+                        state <= S_FINISH;
+                    iter_count <= iter_count - 6'd1;
+                end
+
+                // =====================================================
+                // FINISH: Normalize, round, pack result
                 // =====================================================
                 S_FINISH: begin
                     if (special_case) begin
@@ -219,48 +223,42 @@ module fp_sqrt (
                         flags  <= special_flags;
                     end else begin
                         begin : finish_blk
-                            reg [55:0] q;
+                            reg [54:0] q;
                             reg signed [12:0] exp_final;
-                            reg [52:0] mant_final;
+                            reg [51:0] mant_final;
                             reg        g_bit, r_bit, s_bit;
-                            reg [52:0] mant_rounded;
                             reg        inexact;
 
-                            q = root[55:0];
+                            // root[54:0] = 55 result bits
+                            // root[54] = implicit 1 (should always be 1 for normal results)
+                            // root[53:2] = 52 mantissa bits
+                            // root[1] = guard bit
+                            // root[0] = round bit
+                            // remainder != 0 => sticky bit
+                            q = root;
                             exp_final = res_exp;
 
-                            // root has 55 bits of result
-                            // root[54] should be the implicit 1 for normalized results
-                            // If not, normalize by shifting left
-                            if (q[54] == 1'b0) begin
+                            // Normalize if needed (shouldn't be for normal inputs)
+                            if (!q[54]) begin
                                 q = q << 1;
                                 exp_final = exp_final - 13'sd1;
                             end
 
-                            // Extract: q[54]=1(implicit), q[53:2]=52 mant bits,
-                            //           q[1]=guard, q[0]=round, remainder=sticky
-                            mant_final = {q[54], q[53:2]};
+                            mant_final = q[53:2];
                             g_bit      = q[1];
                             r_bit      = q[0];
-                            s_bit      = (remainder != 114'b0);
-
-                            r_sign   = 1'b0;  // sqrt result always positive
-                            r_guard  = g_bit;
-                            r_round  = r_bit;
-                            r_sticky = s_bit;
-                            r_lsb    = q[2];
-                            r_rm     = rm;
+                            s_bit      = (remainder != 57'b0);
 
                             inexact = g_bit | r_bit | s_bit;
 
-                            mant_rounded = mant_final + {52'b0, round_up};
-
-                            // Check mantissa overflow from rounding
-                            if (mant_rounded[52] && !mant_final[52]) begin
-                                exp_final = exp_final + 13'sd1;
+                            // Rounding (use shared rounding function)
+                            // sqrt result is always positive, so sign=0
+                            if (fp_do_round(1'b0, g_bit, r_bit, s_bit, mant_final[0], rm)) begin
+                                mant_final = mant_final + 52'd1;
+                                if (mant_final == 52'd0)
+                                    exp_final = exp_final + 13'sd1;
                             end
 
-                            // Handle overflow (very unlikely for sqrt)
                             if (exp_final >= 13'sd2047) begin
                                 result     <= {1'b0, EXP_MAX, 52'b0};
                                 flags[OF]  <= 1'b1;
@@ -269,7 +267,6 @@ module fp_sqrt (
                                 flags[DZ]  <= 1'b0;
                                 flags[UF]  <= 1'b0;
                             end else if (exp_final <= 13'sd0) begin
-                                // Underflow — flush to zero
                                 result     <= 64'b0;
                                 flags[UF]  <= 1'b1;
                                 flags[NX]  <= 1'b1;
@@ -277,7 +274,7 @@ module fp_sqrt (
                                 flags[DZ]  <= 1'b0;
                                 flags[OF]  <= 1'b0;
                             end else begin
-                                result     <= {1'b0, exp_final[10:0], mant_rounded[51:0]};
+                                result     <= {1'b0, exp_final[10:0], mant_final};
                                 flags[NX]  <= inexact;
                                 flags[NV]  <= 1'b0;
                                 flags[DZ]  <= 1'b0;

@@ -326,7 +326,8 @@ module fpu_top (
     // -----------------------------------------------------------------------
     // Active-unit register
     // Tracks which multicycle subunit was started so we know whose done/result
-    // to forward. Cleared when that unit asserts done.
+    // to forward. NOT cleared on done -- the result must remain selectable
+    // until the pipeline consumes it. Overwritten on the next multicycle start.
     // -----------------------------------------------------------------------
     always @(posedge clk) begin
         if (rst) begin
@@ -340,9 +341,10 @@ module fpu_top (
             else if (op_is_sqrt) active_unit <= UNIT_SQRT;
             else if (op_is_conv) active_unit <= UNIT_CONV;
             else                 active_unit <= UNIT_NONE;
-        end else if (done) begin
-            active_unit <= UNIT_NONE;
         end
+        // NOTE: Do NOT clear active_unit on done.  The result must remain
+        // selectable on the output mux until the pipeline consumes it.
+        // active_unit is overwritten when the next multicycle start arrives.
     end
 
     // -----------------------------------------------------------------------

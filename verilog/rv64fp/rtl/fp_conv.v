@@ -48,21 +48,9 @@ module fp_conv (
     );
 
     // -----------------------------------------------------------------
-    // Rounding instance
+    // Rounding function (shared logic)
     // -----------------------------------------------------------------
-    wire round_up;
-    reg  r_guard, r_round, r_sticky, r_lsb, r_sign;
-    reg  [2:0] r_rm;
-
-    fp_round u_round (
-        .sign      (r_sign),
-        .guard     (r_guard),
-        .round_bit (r_round),
-        .sticky    (r_sticky),
-        .lsb       (r_lsb),
-        .rm        (r_rm),
-        .round_up  (round_up)
-    );
+    `include "fp_round_func.vh"
 
     // -----------------------------------------------------------------
     // FSM
@@ -102,6 +90,20 @@ module fp_conv (
             result       <= 64'b0;
             flags        <= 5'b0;
             result_is_int <= 1'b0;
+            lzc_data     <= 64'b0;
+            op_r         <= 4'b0;
+            rm_r         <= 3'b0;
+            fp_sign      <= 1'b0;
+            fp_exp       <= 11'b0;
+            fp_mant      <= 53'b0;
+            fp_is_nan    <= 1'b0;
+            fp_is_inf    <= 1'b0;
+            fp_is_zero   <= 1'b0;
+            shift_amt    <= 13'b0;
+            int_sign     <= 1'b0;
+            int_abs      <= 64'b0;
+            int_exp      <= 11'b0;
+            int_shifted  <= 64'b0;
         end else begin
             done <= 1'b0;
 
@@ -201,7 +203,6 @@ module fp_conv (
                 // =====================================================
                 S_CYCLE2: begin
                     flags <= 5'b0;
-
                     if (op_r <= 4'd3) begin
                         // -------------------------------------------
                         // FP -> Int conversion
@@ -244,14 +245,13 @@ module fp_conv (
                                 // But need to check rounding
                                 // For simplicity: if shft == -1, guard = mant[52], etc.
                                 // We round toward the appropriate direction
-                                r_sign   = fp_sign;
-                                r_guard  = (shft == -13'sd1) ? fp_mant[52] : 1'b0;
-                                r_round  = (shft == -13'sd1) ? fp_mant[51] :
-                                           (shft == -13'sd2) ? fp_mant[52] : 1'b0;
-                                r_sticky = 1'b1;  // there are always fractional bits
-                                r_lsb    = 1'b0;
-                                r_rm     = rm_r;
-                                if (round_up) begin
+                                // Apply rounding (use shared rounding function)
+                                begin : fp2int_sub1_vars
+                                    reg loc_guard, loc_round;
+                                    loc_guard = (shft == -13'sd1) ? fp_mant[52] : 1'b0;
+                                    loc_round = (shft == -13'sd1) ? fp_mant[51] :
+                                               (shft == -13'sd2) ? fp_mant[52] : 1'b0;
+                                if (fp_do_round(fp_sign, loc_guard, loc_round, 1'b1, 1'b0, rm_r)) begin
                                     int_val = 64'd1;
                                     // Check if rounded result overflows unsigned zero case
                                     if (fp_sign && (op_r == 4'd1 || op_r == 4'd3)) begin
@@ -260,6 +260,7 @@ module fp_conv (
                                         int_val = max_neg; // 0
                                     end
                                 end
+                                end // fp2int_sub1_vars
                             end else if (shft > 63) begin
                                 // Definitely out of range
                                 out_of_range = 1'b1;
@@ -275,14 +276,9 @@ module fp_conv (
                                     frac_bits = {11'b0, fp_mant} << (shft + 13'sd12);
                                     // guard = frac_bits[63], round = frac_bits[62],
                                     // sticky = |frac_bits[61:0]
-                                    r_sign   = fp_sign;
-                                    r_guard  = frac_bits[63];
-                                    r_round  = frac_bits[62];
-                                    r_sticky = |frac_bits[61:0];
-                                    r_lsb    = shifted_mant[0];
-                                    r_rm     = rm_r;
                                     inexact = frac_bits[63] | frac_bits[62] | (|frac_bits[61:0]);
-                                    shifted_mant = shifted_mant + {63'b0, round_up};
+                                    // Apply rounding (use shared rounding function)
+                                    shifted_mant = shifted_mant + {63'b0, fp_do_round(fp_sign, frac_bits[63], frac_bits[62], |frac_bits[61:0], shifted_mant[0], rm_r)};
                                 end
 
                                 int_val = shifted_mant;
@@ -357,10 +353,11 @@ module fp_conv (
                             reg        inexact;
 
                             abs_val = int_abs;
-                            lz      = lzc_count;
 
-                            // Feed LZC (combinational)
+                            // Feed LZC (combinational) — must be before reading lzc_count
                             lzc_data = abs_val;
+
+                            lz      = lzc_count;
 
                             if (abs_val == 64'b0) begin
                                 // Zero integer -> +0.0 or -0.0
@@ -396,15 +393,8 @@ module fp_conv (
                                     s_bit   = 1'b0;
                                 end
 
-                                // Rounding
-                                r_sign   = int_sign;
-                                r_guard  = g_bit;
-                                r_round  = rnd_bit;
-                                r_sticky = s_bit;
-                                r_lsb    = shifted[11];
-                                r_rm     = rm_r;
-
-                                mant_rounded = {1'b0, mant_out} + {52'b0, round_up};
+                                // Apply rounding (use shared rounding function)
+                                mant_rounded = {1'b0, mant_out} + {52'b0, fp_do_round(int_sign, g_bit, rnd_bit, s_bit, shifted[11], rm_r)};
 
                                 // If mantissa overflows (all 1s + round up)
                                 if (mant_rounded[52]) begin

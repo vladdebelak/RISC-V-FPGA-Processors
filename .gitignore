@@ -24,3 +24,4 @@ reports/
 __pycache__/
 *.pyc
 node_modules/
+verilog/rv64fp/sim/xsim.dir/

@@ -25,8 +25,7 @@ module rv64fp_core (
     wire [63:0] ifid_pc;
     wire        ifid_valid;
 
-    // Instruction address to BRAM (word-aligned)
-    assign instr_addr = pc_out[10:2];
+    // Instruction address to BRAM: assigned below (after stall_if declaration)
 
     // --- Decode stage outputs ---
     wire [4:0]  id_rs1_addr;
@@ -123,6 +122,12 @@ module rv64fp_core (
     wire        flush_if;
     wire        flush_id;
     wire        flush_ex;
+
+    // Instruction address to BRAM (word-aligned)
+    // During stalls, re-read the instruction at ifid_pc so instr_data stays stable.
+    // Without this, pc_reg may have already advanced before the stall, causing
+    // BRAM to output a wrong instruction.
+    assign instr_addr = stall_if ? ifid_pc[10:2] : pc_out[10:2];
 
     // --- Combinational EX results (for 1-cycle-ahead forwarding) ---
     wire [63:0] ex_result_comb;
@@ -289,6 +294,7 @@ module rv64fp_core (
     memory u_memory (
         .clk            (clk),
         .rst            (rst),
+        .stall_ex       (stall_ex),
         // EX/MEM inputs
         .exmem_rd       (exmem_rd),
         .exmem_alu_result(exmem_alu_result),

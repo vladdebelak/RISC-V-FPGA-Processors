@@ -60,21 +60,9 @@ module fp_div (
     reg [4:0]  special_flags;
 
     // -----------------------------------------------------------------
-    // Rounding logic (instantiate fp_round)
+    // Rounding function (shared logic)
     // -----------------------------------------------------------------
-    wire round_up;
-    reg  r_guard, r_round, r_sticky, r_lsb, r_sign;
-    reg  [2:0] r_rm;
-
-    fp_round u_round (
-        .sign      (r_sign),
-        .guard     (r_guard),
-        .round_bit (r_round),
-        .sticky    (r_sticky),
-        .lsb       (r_lsb),
-        .rm        (r_rm),
-        .round_up  (round_up)
-    );
+    `include "fp_round_func.vh"
 
     // -----------------------------------------------------------------
     // FSM states
@@ -198,11 +186,22 @@ module fp_div (
                                      - $signed({2'b0, (b_is_sub_r ? 11'd1 : b_exp_r)})
                                      + $signed(13'd1023);
 
-                            // Load dividend into partial remainder (55 bits: 1.52 + 2 extra)
-                            partial_rem <= {4'b0, a_mant_r};
-                            divisor_r   <= {2'b0, b_mant_r};
-
-                            iter_count <= 6'd56;
+                            // Setup for restoring division.
+                            // Pre-subtract if a_mant >= b_mant to keep remainder < divisor.
+                            divisor_r <= {2'b0, b_mant_r};
+                            if (a_mant_r >= b_mant_r) begin
+                                // Quotient integer bit is 1
+                                partial_rem <= {4'b0, a_mant_r - b_mant_r};
+                                quotient    <= {56'b0, 1'b1};  // set bit 0 initially
+                            end else begin
+                                // Quotient < 1: adjust exponent
+                                partial_rem <= {4'b0, a_mant_r};
+                                quotient    <= 57'b0;
+                                res_exp <= $signed({2'b0, (a_is_sub_r ? 11'd1 : a_exp_r)})
+                                         - $signed({2'b0, (b_is_sub_r ? 11'd1 : b_exp_r)})
+                                         + $signed(13'd1022); // BIAS-1 for quotient in (0.5,1)
+                            end
+                            iter_count <= 6'd55;  // 55 more iterations for remaining bits
                         end else begin
                             // Special case: jump to finish
                             iter_count <= 6'd0;
@@ -212,16 +211,20 @@ module fp_div (
                         state <= S_FINISH;
                     end else begin
                         // ---------------------------------------------------
-                        // Non-restoring division step
+                        // Restoring division step (produces binary quotient directly)
                         // ---------------------------------------------------
-                        if (partial_rem[56] == 1'b0) begin
-                            // Remainder positive: q=1, R = 2*R - D
-                            quotient    <= {quotient[55:0], 1'b1};
-                            partial_rem <= (partial_rem <<< 1) - $signed({2'b0, divisor_r});
-                        end else begin
-                            // Remainder negative: q=0, R = 2*R + D
-                            quotient    <= {quotient[55:0], 1'b0};
-                            partial_rem <= (partial_rem <<< 1) + $signed({2'b0, divisor_r});
+                        begin : div_step
+                            reg signed [56:0] trial;
+                            trial = (partial_rem <<< 1) - $signed({2'b0, divisor_r});
+                            if (trial[56] == 1'b0) begin
+                                // Trial subtraction succeeded (non-negative)
+                                quotient    <= {quotient[55:0], 1'b1};
+                                partial_rem <= trial;
+                            end else begin
+                                // Trial subtraction produced negative: restore (don't subtract)
+                                quotient    <= {quotient[55:0], 1'b0};
+                                partial_rem <= partial_rem <<< 1;  // just shift, no subtract
+                            end
                         end
                         iter_count <= iter_count - 6'd1;
                     end
@@ -251,14 +254,10 @@ module fp_div (
                             reg [52:0] mant_rounded;
                             reg        inexact;
 
-                            // Correct quotient if remainder is negative
-                            if (partial_rem[56]) begin
-                                q_final   = quotient - 57'd1;
-                                rem_final = partial_rem + {2'b0, divisor_r};
-                            end else begin
-                                q_final   = quotient;
-                                rem_final = partial_rem;
-                            end
+                            // Restoring division produces binary quotient directly.
+                            // Remainder is always non-negative.
+                            q_final   = quotient;
+                            rem_final = partial_rem;
 
                             // q_final has 56 significant bits.
                             // Format: bit[55] is the integer bit (should be 1 for normalized).
@@ -280,27 +279,20 @@ module fp_div (
                             r_bit      = q_final[1];
                             s_bit      = q_final[0] | (rem_final != 57'b0);
 
-                            // Rounding
-                            r_sign  = res_sign_r;
-                            r_guard = g_bit;
-                            r_round = r_bit;
-                            r_sticky = s_bit;
-                            r_lsb   = q_final[3]; // LSB of mantissa
-                            r_rm    = rm;
-
                             inexact = g_bit | r_bit | s_bit;
 
-                            mant_rounded = mant_final + {52'b0, round_up};
+                            // Apply rounding (use shared rounding function)
+                            begin : div_round_apply
+                                reg do_rnd;
+                                do_rnd = fp_do_round(res_sign_r, g_bit, r_bit, s_bit, q_final[3], rm);
+                                mant_rounded = mant_final + {52'b0, do_rnd};
 
-                            // Check for mantissa overflow after rounding (1.111...1 + 1 = 10.0)
-                            if (mant_rounded[52] && !mant_final[52]) begin
-                                // This can't happen since mant_final[52] is the implicit 1
-                                // But if somehow it carries past:
-                                exp_final = exp_final + 13'sd1;
-                            end else if (mant_rounded == 53'b0 && round_up) begin
-                                // Rounded up from all-1s mantissa
-                                exp_final = exp_final + 13'sd1;
-                                mant_rounded = 53'h10_0000_0000_0000; // 1.0
+                                if (mant_rounded[52] && !mant_final[52]) begin
+                                    exp_final = exp_final + 13'sd1;
+                                end else if (mant_rounded == 53'b0 && do_rnd) begin
+                                    exp_final = exp_final + 13'sd1;
+                                    mant_rounded = 53'h10_0000_0000_0000;
+                                end
                             end
 
                             // Handle overflow

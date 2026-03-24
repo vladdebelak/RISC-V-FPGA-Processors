@@ -61,20 +61,9 @@ module fp_mul (
     reg [105:0] product;                // 53 x 53 = 106-bit product
 
     // ========================================================================
-    // Rounding module instance
+    // Rounding function (shared logic)
     // ========================================================================
-    reg  rnd_sign, rnd_guard, rnd_round, rnd_sticky, rnd_lsb;
-    wire round_up;
-
-    fp_round u_round (
-        .sign      (rnd_sign),
-        .guard     (rnd_guard),
-        .round_bit (rnd_round),
-        .sticky    (rnd_sticky),
-        .lsb       (rnd_lsb),
-        .rm        (rm),
-        .round_up  (round_up)
-    );
+    `include "fp_round_func.vh"
 
     // ========================================================================
     // Main state machine
@@ -259,17 +248,9 @@ module fp_mul (
                             final_mant = product[103:52];
                         end
 
-                        // --- Drive rounding module ---
-                        rnd_sign   = res_sign;
-                        rnd_guard  = s3_guard;
-                        rnd_round  = s3_round;
-                        rnd_sticky = s3_sticky;
-                        rnd_lsb    = final_mant[0];
-
-                        // --- Apply rounding ---
-                        if (round_up) begin
+                        // --- Apply rounding (use shared rounding function) ---
+                        if (fp_do_round(res_sign, s3_guard, s3_round, s3_sticky, final_mant[0], rm)) begin
                             final_mant = final_mant + 52'd1;
-                            // Check for mantissa overflow (all 52 bits were 1)
                             if (final_mant == 52'd0) begin
                                 norm_exp = norm_exp + 1;
                             end
