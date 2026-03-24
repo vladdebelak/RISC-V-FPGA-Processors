@@ -1,0 +1,42 @@
+[tasks]
+bmc
+
+[options]
+bmc: mode bmc
+bmc: depth 120
+
+[engines]
+smtbmc z3
+
+[script]
+read_verilog -formal ../../../verilog/rv64fp/rtl/fpu_top.v
+read_verilog -formal ../../../verilog/rv64fp/rtl/fp_add.v
+read_verilog -formal ../../../verilog/rv64fp/rtl/fp_mul.v
+read_verilog -formal ../../../verilog/rv64fp/rtl/fp_div.v
+read_verilog -formal ../../../verilog/rv64fp/rtl/fp_sqrt.v
+read_verilog -formal ../../../verilog/rv64fp/rtl/fp_fma.v
+read_verilog -formal ../../../verilog/rv64fp/rtl/fp_cmp.v
+read_verilog -formal ../../../verilog/rv64fp/rtl/fp_conv.v
+read_verilog -formal ../../../verilog/rv64fp/rtl/fp_misc.v
+read_verilog -formal ../../../verilog/rv64fp/rtl/fp_lzc.v
+read_verilog -formal ../../../verilog/rv64fp/rtl/fp_round.v
+read_verilog -formal ../../../verilog/rv64fp/rtl/fcsr.v
+read -sv ../../rv64fp/sva_fpu.sv
+read -sv ../../rv64fp/sva_binds.sv
+prep -top fpu_top
+
+[files]
+../../../verilog/rv64fp/rtl/fpu_top.v
+../../../verilog/rv64fp/rtl/fp_add.v
+../../../verilog/rv64fp/rtl/fp_mul.v
+../../../verilog/rv64fp/rtl/fp_div.v
+../../../verilog/rv64fp/rtl/fp_sqrt.v
+../../../verilog/rv64fp/rtl/fp_fma.v
+../../../verilog/rv64fp/rtl/fp_cmp.v
+../../../verilog/rv64fp/rtl/fp_conv.v
+../../../verilog/rv64fp/rtl/fp_misc.v
+../../../verilog/rv64fp/rtl/fp_lzc.v
+../../../verilog/rv64fp/rtl/fp_round.v
+../../../verilog/rv64fp/rtl/fcsr.v
+../../rv64fp/sva_fpu.sv
+../../rv64fp/sva_binds.sv

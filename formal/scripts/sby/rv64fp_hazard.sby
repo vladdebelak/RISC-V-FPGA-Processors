@@ -1,0 +1,20 @@
+[tasks]
+bmc
+
+[options]
+bmc: mode bmc
+bmc: depth 5
+
+[engines]
+smtbmc z3
+
+[script]
+read_verilog -formal ../../../verilog/rv64fp/rtl/hazard_unit.v
+read -sv ../../rv64fp/sva_hazard_unit.sv
+read -sv ../../rv64fp/sva_binds.sv
+prep -top hazard_unit
+
+[files]
+../../../verilog/rv64fp/rtl/hazard_unit.v
+../../rv64fp/sva_hazard_unit.sv
+../../rv64fp/sva_binds.sv

@@ -1,0 +1,20 @@
+[tasks]
+bmc
+
+[options]
+bmc: mode bmc
+bmc: depth 10
+
+[engines]
+smtbmc z3
+
+[script]
+read_verilog -formal ../../../verilog/rv64fp/rtl/reset_sync.v
+read -sv ../../rv64fp/sva_reset_sync.sv
+read -sv ../../rv64fp/sva_binds.sv
+prep -top reset_sync
+
+[files]
+../../../verilog/rv64fp/rtl/reset_sync.v
+../../rv64fp/sva_reset_sync.sv
+../../rv64fp/sva_binds.sv
