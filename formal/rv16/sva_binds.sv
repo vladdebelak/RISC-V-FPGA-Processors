@@ -14,7 +14,7 @@ bind reset_sync sva_reset_sync_props rst_props_i (
 
 // Bind ALU properties (combinational module — clock from parent)
 bind alu sva_rv16_alu_props alu_props_i (
-    .clk    (rv16_top.clk),
+    .clk    (rv16_top.CLK100MHZ),
     .a      (a),
     .b      (b),
     .alu_op (alu_op),
@@ -28,8 +28,8 @@ bind rv16_core sva_rv16_core_props core_props_i (
     .rst        (rst),
     .instr_addr (instr_addr),
     .instr_data (instr_data),
-    .data_addr  (data_addr),
-    .data_wdata (data_wdata),
-    .data_rdata (data_rdata),
-    .data_we    (data_we)
+    .mem_addr   (mem_addr),
+    .mem_wdata  (mem_wdata),
+    .mem_rdata  (mem_rdata),
+    .mem_we     (mem_we)
 );

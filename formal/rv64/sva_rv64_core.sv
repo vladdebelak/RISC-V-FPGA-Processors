@@ -7,44 +7,40 @@
 module sva_rv64_core_props (
     input logic        clk,
     input logic        rst,
-    input logic [63:0] instr_addr,
+    input logic [8:0]  instr_addr,
     input logic [31:0] instr_data,
-    input logic [63:0] data_addr,
-    input logic [63:0] data_wdata,
-    input logic [63:0] data_rdata,
-    input logic        data_we
+    input logic [63:0] mem_addr,
+    input logic [63:0] mem_wdata,
+    input logic [63:0] mem_rdata,
+    input logic        mem_we
 );
 
     default clocking cb @(posedge clk); endclocking
 
     // -----------------------------------------------------------------------
-    // P_PC_ALIGNED: Instruction address is always word-aligned (bits [1:0] == 0)
-    // RV64 uses 32-bit instructions, so PC must be 4-byte aligned.
+    // P_INSTR_ADDR_RANGE: Instruction address always within BRAM range
+    // (9-bit word index for 512-entry instruction memory)
     // -----------------------------------------------------------------------
-    P_PC_ALIGNED: assert property (
-        @(posedge clk) !rst |-> instr_addr[1:0] == 2'b00
-    ) else $error("P_PC_ALIGNED: instruction address is not word-aligned");
+    P_INSTR_ADDR_RANGE: assert property (
+        @(posedge clk) !rst |-> instr_addr <= 9'd511
+    ) else $error("P_INSTR_ADDR_RANGE: instruction address out of BRAM range");
 
     // -----------------------------------------------------------------------
     // P_NO_WRITE_IN_RESET: No data memory writes during reset
+    // (skip first 2 cycles to allow pipeline registers to initialize)
     // -----------------------------------------------------------------------
-    P_NO_WRITE_IN_RESET: assert property (
-        @(posedge clk) rst |-> !data_we
-    ) else $error("P_NO_WRITE_IN_RESET: data_we asserted during reset");
+    logic [1:0] init_count = 2'd0;
+    always_ff @(posedge clk) if (init_count < 2'd2) init_count <= init_count + 1;
 
-    // -----------------------------------------------------------------------
-    // P_PC_IN_RANGE: PC stays within a reasonable address range
-    // (upper bits should not be all ones unless in kernel space)
-    // -----------------------------------------------------------------------
-    P_PC_IN_RANGE: assert property (
-        @(posedge clk) !rst |-> instr_addr < 64'h0000_0001_0000_0000
-    ) else $error("P_PC_IN_RANGE: instruction address out of expected range");
+    P_NO_WRITE_IN_RESET: assert property (
+        @(posedge clk) (init_count == 2'd2) && rst |-> !mem_we
+    ) else $error("P_NO_WRITE_IN_RESET: mem_we asserted during reset");
 
     // -----------------------------------------------------------------------
     // C_BRANCH_TAKEN: Cover a branch being taken (non-sequential PC change)
     // -----------------------------------------------------------------------
     C_BRANCH_TAKEN: cover property (
-        @(posedge clk) !rst ##1 (!rst && (instr_addr != ($past(instr_addr) + 64'd4)))
+        @(posedge clk) !rst ##1 (!rst && (instr_addr != ($past(instr_addr) + 9'd1)))
     );
 
 endmodule

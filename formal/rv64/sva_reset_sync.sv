@@ -32,7 +32,7 @@ module sva_reset_sync_props (
     // P_FF0_CLEARS_FIRST: After rst_btn deasserts, sync_ff0 clears before sync_ff1
     // -----------------------------------------------------------------------
     P_FF0_CLEARS_FIRST: assert property (
-        @(posedge clk) $fell(rst_btn) |-> ##1 (!sync_ff0 && sync_ff1)
+        @(posedge clk) $fell(rst_btn) |-> !sync_ff0 && sync_ff1
     ) else $error("P_FF0_CLEARS_FIRST: sync_ff0 did not clear before sync_ff1");
 
     // -----------------------------------------------------------------------

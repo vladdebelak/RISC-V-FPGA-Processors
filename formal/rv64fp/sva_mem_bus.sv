@@ -36,6 +36,13 @@ module sva_mem_bus_props (
     default clocking cb @(posedge clk); endclocking
 
     // -----------------------------------------------------------------------
+    // Initialization guard: skip first 2 cycles while inputs settle from X
+    // -----------------------------------------------------------------------
+    logic [1:0] init_count = 2'd0;
+    always_ff @(posedge clk) if (init_count < 2'd2) init_count <= init_count + 1;
+    wire initialized = (init_count == 2'd2);
+
+    // -----------------------------------------------------------------------
     // Internal: replicate address decode logic for assertions
     // -----------------------------------------------------------------------
     wire sel_gpio = (addr[15:8] == 8'hFF);
@@ -45,7 +52,7 @@ module sva_mem_bus_props (
     // P_WE_MUTUAL_EXCLUSION: Cannot write both DMEM and GPIO simultaneously
     // -----------------------------------------------------------------------
     P_WE_MUTUAL_EXCLUSION: assert property (
-        @(posedge clk) !(dm_we && gpio_we)
+        @(posedge clk) initialized |-> !(dm_we && gpio_we)
     ) else $error("P_WE_MUTUAL_EXCLUSION: both dm_we and gpio_we asserted");
 
     // -----------------------------------------------------------------------

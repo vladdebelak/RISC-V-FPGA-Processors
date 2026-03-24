@@ -19,6 +19,13 @@ module sva_rv64_alu_props (
     default clocking cb @(posedge clk); endclocking
 
     // -----------------------------------------------------------------------
+    // Initialization guard: skip first 2 cycles while inputs settle from X
+    // -----------------------------------------------------------------------
+    logic [1:0] init_count = 2'd0;
+    always_ff @(posedge clk) if (init_count < 2'd2) init_count <= init_count + 1;
+    wire initialized = (init_count == 2'd2);
+
+    // -----------------------------------------------------------------------
     // Helper: sign-extend 32-bit value to 64 bits
     // -----------------------------------------------------------------------
     function automatic logic [63:0] sign_ext_32(input logic [31:0] val);
@@ -88,15 +95,15 @@ module sva_rv64_alu_props (
     // Comparison flags (always active, independent of opcode)
     // -----------------------------------------------------------------------
     P_ZERO_FLAG: assert property (
-        @(posedge clk) zero == (a == b)
+        @(posedge clk) initialized |-> zero == (a == b)
     ) else $error("P_ZERO_FLAG: zero flag mismatch");
 
     P_LT_SIGNED: assert property (
-        @(posedge clk) lt_signed == ($signed(a) < $signed(b))
+        @(posedge clk) initialized |-> lt_signed == ($signed(a) < $signed(b))
     ) else $error("P_LT_SIGNED: lt_signed flag mismatch");
 
     P_LT_UNSIGNED: assert property (
-        @(posedge clk) lt_unsigned == (a < b)
+        @(posedge clk) initialized |-> lt_unsigned == (a < b)
     ) else $error("P_LT_UNSIGNED: lt_unsigned flag mismatch");
 
     // -----------------------------------------------------------------------

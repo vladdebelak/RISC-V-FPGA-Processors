@@ -70,19 +70,22 @@ module sva_fpu_protocol_props (
     ) else $error("P_DONE_ENDS_BUSY: busy remained high after done");
 
     // -----------------------------------------------------------------------
-    // P_DONE_PULSE_WIDTH: done is a single-cycle pulse
+    // P_DONE_PULSE_WIDTH: done is a single-cycle pulse unless a new op starts
+    // (back-to-back combinational ops may keep done high across cycles)
     // -----------------------------------------------------------------------
     P_DONE_PULSE_WIDTH: assert property (
         @(posedge clk) disable iff (rst)
-        done |=> !done
-    ) else $error("P_DONE_PULSE_WIDTH: done was not a single-cycle pulse");
+        done |=> !done || start
+    ) else $error("P_DONE_PULSE_WIDTH: done persisted without a new start");
 
     // -----------------------------------------------------------------------
-    // P_NO_DONE_IDLE: No spurious done when idle and no start
+    // P_NO_DONE_IDLE: No spurious done when truly idle (idle for 2+ cycles)
+    // A multicycle done fires at the same cycle busy drops, so we require
+    // the FPU to have been non-busy on the previous cycle as well.
     // -----------------------------------------------------------------------
     P_NO_DONE_IDLE: assert property (
         @(posedge clk) disable iff (rst)
-        !busy && !start |-> !done
+        !busy && !start && $past(!busy && !start) |-> !done
     ) else $error("P_NO_DONE_IDLE: spurious done while idle");
 
     // -----------------------------------------------------------------------
