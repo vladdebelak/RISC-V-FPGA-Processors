@@ -1,1 +1,0 @@
-"tb_formal_wrapper" -s "formal_rv64" -timescale "1ns/1ps" 
