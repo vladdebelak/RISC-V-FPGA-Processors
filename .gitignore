@@ -26,3 +26,12 @@ __pycache__/
 node_modules/
 verilog/rv64fp/sim/xsim.dir/
 formal/scripts/xsim_*/
+
+# Local-only presentation assets
+.local_keep/
+AI_Powered_FPGA_Processor_Design.pptx
+RISC-V_Processor_Evolution.pptx
+presentation.pdf
+presentation.pptx
+gen_presentation.js
+slide-*.jpg
