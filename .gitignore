@@ -35,3 +35,16 @@ presentation.pdf
 presentation.pptx
 gen_presentation.js
 slide-*.jpg
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.out
+*.toc
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+
+# Local claude observer lock
+.observer.lock

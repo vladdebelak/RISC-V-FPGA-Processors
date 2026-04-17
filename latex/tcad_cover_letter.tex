@@ -1,0 +1,103 @@
+\documentclass[11pt]{letter}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{url}
+\usepackage{parskip}
+
+\signature{George Teifel, Ph.D.\\
+Associate Professor\\
+Department of Electrical and Computer Engineering\\
+University of New Mexico\\
+Albuquerque, NM 87131, USA\\
+gteifel@unm.edu}
+
+\date{March 24, 2026}
+
+\begin{document}
+
+\begin{letter}{%
+Editor-in-Chief\\
+IEEE Transactions on Computer-Aided Design of\\
+Integrated Circuits and Systems (TCAD)}
+
+\opening{Dear Editor-in-Chief,}
+
+We are pleased to submit our manuscript entitled \textbf{``Building VHDL
+Processors with Claude Code: From 16-Bit to 64-Bit FPU''} for
+consideration as a journal paper in IEEE Transactions on Computer-Aided
+Design of Integrated Circuits and Systems.
+
+This manuscript is an extended version of our conference paper presented
+at the ACM/IEEE Workshop on Machine Learning for CAD (MLCAD 2026).  The
+journal version contains more than 30\% new content beyond the
+conference paper, including the following substantial additions:
+
+\begin{enumerate}
+\item \textbf{Comprehensive Comparison with Prior Work
+      (Table~III, Section~V):} A new dedicated section presents a
+      detailed comparison with five prior approaches to AI-assisted HDL
+      generation (DAVE, Chip-Chat, HDLGen-ChatGPT, ResBench, and this
+      work) across ten quantitative metrics, accompanied by
+      approximately one page of narrative analysis comparing
+      methodologies, qualitative differences, and trade-offs.
+
+\item \textbf{Timing Analysis and Per-Variant Resource Breakdown
+      (Section~IV.E, Table~IV):} A new section provides critical path
+      analysis, maximum frequency estimation ($F_{\max} \approx
+      108.7$~MHz), Verilog vs.\ VHDL synthesis comparison, and a
+      detailed per-variant resource breakdown (LUTs, flip-flops, DSP48E1,
+      BRAM) for all three processor variants in both languages.
+
+\item \textbf{Extended FPU Verification Coverage
+      (Section~IV.C, Table~III):} A new subsection presents an IEEE~754
+      corner-case coverage matrix documenting which special values
+      (denormals, $\pm\infty$, qNaN, sNaN, $\pm 0$) are tested for
+      each of the 28 FPU operations via simulation and formal
+      verification, along with the test vector selection methodology
+      and coverage analysis.
+
+\item \textbf{Toward Unbounded Verification (Section~IV.F):} A new
+      section discusses the limitations of bounded model checking and
+      presents strategies for extending verification toward unbounded
+      proofs, including k-induction, abstract interpretation,
+      assume-guarantee decomposition, and IC3/PDR algorithms, with a
+      concrete four-phase roadmap.
+
+\item \textbf{Extended Related Work (Section~I):} The introduction has
+      been expanded with a survey of five additional recent works in
+      AI-assisted hardware design: RTLCoder (Liu et al., 2024),
+      ChipNeMo (NVIDIA, 2024), VeriGen (Thakur et al., 2024), RTLLM
+      (Lu et al., 2024), and ChipGPT (Chang et al., 2023).
+
+\item \textbf{Reproducibility Section (Section~II.E):} A new subsection
+      details the skill file structure (1,286 lines across four files),
+      the three-phase generation workflow, build automation
+      infrastructure, and open-source availability.
+\end{enumerate}
+
+The new content exceeds 30\% of the total manuscript, expanding the
+conference paper from approximately 10 pages to 15 pages in IEEE
+journal format.  All original content from the conference paper has been
+preserved and, where appropriate, strengthened with cross-references to
+the new material.
+
+The manuscript has not been submitted elsewhere and is not under
+consideration by any other journal.  All authors have approved the
+manuscript and agree to its submission.
+
+We believe this work makes a significant contribution to the field of
+computer-aided design by demonstrating that domain-specific context
+engineering can enable AI-assisted generation of hardware designs far
+exceeding the complexity of any prior work --- including a 64-bit RISC-V
+processor with a full IEEE~754 double-precision floating-point unit,
+verified through both simulation-based TDD and formal methods.
+
+We respectfully request that this manuscript be considered for
+publication in IEEE TCAD.
+
+\closing{Sincerely,}
+
+\end{letter}
+\end{document}
