@@ -87,15 +87,14 @@ Verify:
 claude --version
 ```
 
-> **Admin rights — lighter touch than it looks.** The native installer
-> typically installs into the user's home/local directory, so on a normal lab
-> user account it usually does **not** require local administrator rights —
-> students can often run it themselves. IT involvement is still useful for
-> pushing Claude Code cleanly across locked-down lab images (and for the
-> OSS CAD Suite placement), but it's a light touch rather than a hard
-> blocker. Vivado and the boards are already provisioned in these labs, so the
-> heavy admin work is done. The npm method, by contrast, needs a global
-> `npm install -g` and Node.js on `PATH`, which is more likely to need admin.
+> **Admin rights — loop in IT.** The native installer (one-line PowerShell on
+> Windows / `curl` on Linux/macOS, no Node.js needed) will **likely require
+> local administrator rights** on locked-down lab images, so the ECE IT admin
+> should be looped in to install or push Claude Code across the machines (and
+> for the OSS CAD Suite placement). Vivado and the boards are already
+> provisioned in these labs, so the heavy admin work is done. The npm method
+> likewise needs a global `npm install -g` and Node.js on `PATH`, which is also
+> likely to need admin.
 
 A first run of `claude` will prompt the student to authenticate (see §5 on
 licensing). Once authenticated, the session persists per user profile.
