@@ -10,10 +10,10 @@ Built with [Claude Code](https://claude.ai/claude-code) (Anthropic, Claude Opus 
 |---------|----------|----------|----------|-----|-------------|------|-----|
 | rv16 | Verilog | 16-bit | 3-stage | RV32I subset | 12 | ~400 | No |
 | rv64 | Verilog | 64-bit | 3-stage | RV64I | 40 | 3,273 | No |
-| rv64fp | Verilog | 64-bit | 5-stage | RV64IFD | 68 | 17,236 | IEEE 754 Double |
+| rv64fp | Verilog | 64-bit | 5-stage | RV64IFD | 68 | 12,969 | IEEE 754 Double |
 | rv16 | VHDL | 16-bit | 3-stage | RV32I subset | 12 | ~400 | No |
 | rv64 | VHDL | 64-bit | 3-stage | RV64I | 40 | 3,273 | No |
-| rv64fp | VHDL | 64-bit | 5-stage | RV64IFD | 68 | 17,236 | IEEE 754 Double |
+| rv64fp | VHDL | 64-bit | 5-stage | RV64IFD | 68 | 12,969 | IEEE 754 Double |
 
 ## Architecture Highlights
 
@@ -53,6 +53,16 @@ Each project contains: `rtl/` (source), `constraints/` (XDC), `sw/` (assembler +
 cd verilog/rv64fp
 vivado -mode batch -source scripts/build.tcl
 ```
+
+## Reproducing & Lab Setup
+
+- **[REPRODUCE.md](REPRODUCE.md)** — step-by-step walkthrough from a bare
+  machine to the paper's results: toolchain install, per-variant simulation,
+  synthesis, board programming, and formal verification, with a claim→command
+  map.
+- **[LAB_SETUP.md](LAB_SETUP.md)** — deploying the reusable framework (the
+  FPGA Claude Code skill + simulation-first TDD workflow) on lab machines for
+  future AI-assisted HDL coursework.
 
 ## Author
 
