@@ -44,29 +44,42 @@ installed.
 
 ## 2. Per-Machine Install Checklist
 
-Install on every lab machine:
+**These UNM ECE labs already have the Artix-7 (XC7A35T) Basys 3 boards and
+Vivado provisioned.** So on a typical lab machine the toolchain below is
+*already present* — the only **new** things you need to add are **Claude Code**
+and, for the formal step, **SymbiYosys + Z3**. Python 3 / Git are usually
+present too; Node.js is optional. The full table is kept for completeness and
+for any machine that hasn't been imaged yet:
 
 | Tool | How | Notes |
 |------|-----|-------|
-| **Vivado 2020.2** | AMD/Xilinx installer | WebPACK edition covers the Basys 3 XC7A35T (free). Use a **campus floating license** if one exists. Install cable drivers for board programming. |
-| **SymbiYosys + Z3** | OSS CAD Suite (YosysHQ) | Prebuilt bundle, includes `sby`, Yosys, Z3. Source its `environment` script. |
-| **Python 3** | OS package / python.org | Runs the `asm2hex.py` assembler. |
-| **Git** | OS package / git-scm.com | Cloning student/project repos. |
-| **Node.js 18+** | nodejs.org / `nvm` | Required by Claude Code (and the optional `gen_article.js`). |
-| **Claude Code (CLI)** | `npm install -g @anthropic-ai/claude-code` or the native installer | The AI agent. See §2.1. |
+| **Vivado 2020.2** | AMD/Xilinx installer | **Already provisioned in these labs.** WebPACK edition covers the Basys 3 XC7A35T (free). Use a **campus floating license** if one exists. Cable drivers for board programming are already installed. |
+| **Basys 3 boards (XC7A35T)** | Lab hardware | **Already present in these labs.** |
+| **SymbiYosys + Z3** | OSS CAD Suite (YosysHQ) | *New — add for the formal step.* Prebuilt bundle, includes `sby`, Yosys, Z3. Source its `environment` script. |
+| **Python 3** | OS package / python.org | Usually already present. Runs the `asm2hex.py` assembler. |
+| **Git** | OS package / git-scm.com | Usually already present. Cloning student/project repos. |
+| **Node.js 18+** | nodejs.org / `nvm` | *Optional.* Only needed for the npm install method of Claude Code and the optional `gen_article.js`. The native installer does **not** need it. |
+| **Claude Code (CLI)** | native installer (recommended) or `npm install -g @anthropic-ai/claude-code` | *New — the main thing to add.* The AI agent. See §2.1. |
 
-### 2.1 Installing Claude Code — IT / admin dependency
+### 2.1 Installing Claude Code
 
-Claude Code is the Anthropic command-line agent. Install options:
+Claude Code is the Anthropic command-line agent. The **native installer is the
+recommended method** — it bundles its own runtime and does **not** require
+Node.js:
 
 ```bash
-# Option A — npm (requires Node.js 18+)
-npm install -g @anthropic-ai/claude-code
-
-# Option B — native installer (no Node needed for the runtime, but Node is
-# still required for the FPGA tooling above)
+# Recommended — native installer (no Node.js needed)
 # Linux/macOS/WSL2:
 curl -fsSL https://claude.ai/install.sh | bash
+
+# Windows (PowerShell):
+irm https://claude.ai/install.ps1 | iex
+```
+
+Alternative — npm (requires Node.js 18+ on `PATH`):
+
+```bash
+npm install -g @anthropic-ai/claude-code
 ```
 
 Verify:
@@ -74,14 +87,15 @@ Verify:
 claude --version
 ```
 
-> **IT dependency — flag this clearly.** All of the above are *global*
-> installs (Vivado, OSS CAD Suite, a global npm package or the native Claude
-> Code binary on `PATH`). On locked-down lab machines this requires **local
-> administrator rights**. Plan to do this **with your IT/lab administrator**:
-> they will need to (a) install Vivado 2020.2 and cable drivers, (b) place the
-> OSS CAD Suite where students can source it, (c) allow the global
-> `npm install -g` / native installer, and (d) ensure Node.js is on `PATH`.
-> Students typically will *not* have rights to do these themselves.
+> **Admin rights — lighter touch than it looks.** The native installer
+> typically installs into the user's home/local directory, so on a normal lab
+> user account it usually does **not** require local administrator rights —
+> students can often run it themselves. IT involvement is still useful for
+> pushing Claude Code cleanly across locked-down lab images (and for the
+> OSS CAD Suite placement), but it's a light touch rather than a hard
+> blocker. Vivado and the boards are already provisioned in these labs, so the
+> heavy admin work is done. The npm method, by contrast, needs a global
+> `npm install -g` and Node.js on `PATH`, which is more likely to need admin.
 
 A first run of `claude` will prompt the student to authenticate (see §5 on
 licensing). Once authenticated, the session persists per user profile.
