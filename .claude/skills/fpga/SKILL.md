@@ -21,6 +21,29 @@ Before starting any FPGA work, **detect the user's Vivado version** (check `viva
 
 ## Context7 Integration
 
+### Preflight check (do this FIRST)
+
+Before any FPGA work, **verify the Context7 MCP server is connected**: check that the `resolve-library-id` and `query-docs` tools (typically named `mcp__context7__resolve-library-id` / `mcp__context7__query-docs` or similar) are available in your tool list, or run `claude mcp list` and confirm `context7` shows as connected.
+
+**If Context7 is NOT available, STOP and tell the user to set it up before continuing.** Give them these options:
+
+```bash
+# Option 1 — guided setup (handles auth, API key, and skill install)
+npx ctx7 setup --claude
+
+# Option 2 — remote server (recommended; API key from https://context7.com/dashboard)
+claude mcp add --scope user --transport http \
+  --header "CONTEXT7_API_KEY: YOUR_API_KEY" \
+  context7 https://mcp.context7.com/mcp
+
+# Option 3 — local server via npx (requires Node.js)
+claude mcp add --scope user context7 -- npx -y @upstash/context7-mcp --api-key YOUR_API_KEY
+```
+
+Then restart the Claude Code session and verify with `claude mcp list`. Do not proceed with FPGA design work using only training-data knowledge of Vivado/AXI/RISC-V specs — stale documentation causes real hardware bugs.
+
+### What to query
+
 Use Context7 MCP to fetch up-to-date documentation for FPGA-related libraries and standards. **Always cross-check that features are compatible with the user's Vivado version and target device.**
 
 1. **Vivado TCL commands**: Query Context7 for "Xilinx Vivado" — then verify commands exist in the user's version (check UG835/UG894 for that release)

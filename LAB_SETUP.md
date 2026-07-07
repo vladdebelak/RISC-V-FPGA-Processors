@@ -60,6 +60,7 @@ for any machine that hasn't been imaged yet:
 | **Git** | OS package / git-scm.com | Usually already present. Cloning student/project repos. |
 | **Node.js 18+** | nodejs.org / `nvm` | *Optional.* Only needed for the npm install method of Claude Code and the optional `gen_article.js`. The native installer does **not** need it. |
 | **Claude Code (CLI)** | native installer (recommended) or `npm install -g @anthropic-ai/claude-code` | *New — the main thing to add.* The AI agent. See §2.1. |
+| **Context7 MCP** | `claude mcp add ...` (per user) | *New — required by the FPGA skill.* Live documentation retrieval (Vivado TCL, AXI, RISC-V ISA). See §2.2. |
 
 ### 2.1 Installing Claude Code
 
@@ -98,6 +99,44 @@ claude --version
 
 A first run of `claude` will prompt the student to authenticate (see §5 on
 licensing). Once authenticated, the session persists per user profile.
+
+### 2.2 Setting up the Context7 MCP server (required by the FPGA skill)
+
+The FPGA skill depends on the **Context7 MCP server** to pull current
+documentation (Vivado TCL commands, AXI/AMBA specs, RISC-V ISA manuals,
+IEEE 754 references) instead of relying on the model's training data. The
+skill's preflight check will **refuse to proceed** if Context7 is not
+connected, so set it up right after installing Claude Code.
+
+Context7 registration is **per user profile** (it lands in the user's
+`~/.claude.json`), so each student account needs it once. Options:
+
+```bash
+# Option 1 — guided setup (handles auth + API key interactively)
+npx ctx7 setup --claude
+
+# Option 2 — remote server (recommended for scripted lab provisioning;
+# get an API key at https://context7.com/dashboard)
+claude mcp add --scope user --transport http \
+  --header "CONTEXT7_API_KEY: YOUR_API_KEY" \
+  context7 https://mcp.context7.com/mcp
+
+# Option 3 — local server via npx (requires Node.js on PATH)
+claude mcp add --scope user context7 -- npx -y @upstash/context7-mcp --api-key YOUR_API_KEY
+```
+
+Verify:
+
+```bash
+claude mcp list    # 'context7' should show as connected
+```
+
+> **For lab imaging:** Option 2 is a single non-interactive command, so it can
+> be scripted into a login/provisioning script alongside the skill copy in §3.
+> A shared lab API key is fine — Context7's free tier covers classroom-scale
+> documentation lookups; upgrade only if rate limits become an issue. If user
+> profiles are wiped between sessions, run the `claude mcp add` command from
+> the same startup script that restores `~/.claude/skills/fpga/`.
 
 ---
 
