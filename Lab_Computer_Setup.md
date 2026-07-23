@@ -13,6 +13,8 @@ Note: If you are not using the same lab computer each week you will have to do t
    - After you have created your accout and chosen a plan, you can go back to Windows Powershell and use Claude-Code
 
 3. Now you will have to set up Claude to be able to program the FPGA boards
+   - First we need to give Claude the FPGA skill, tell Claude to, "Clone the skill into my account from this github repo: https://github.com/vladdebelak/RISC-V-FPGA-Processors"
+   - Now we need to ensure Claude has testbenches to be able to debug code, tell claude to, "Clone the testbenches for this github repo: https://github.com/vladdebelak/RISC-V-FPGA-Processors for a 16 bit Nexys A7 board"
 
 
 
