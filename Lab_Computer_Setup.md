@@ -60,6 +60,9 @@ The only extra tool beyond the lab image is the OSS CAD Suite (SymbiYosys + Yosy
 
 ## Step 2: Get the project + skill
 
+Run all commands in this step in the **same Windows PowerShell window** you used in
+Step 1.
+
 Clone the repository. It contains **both** the project (RTL, testbenches,
 constraints) **and** the Claude FPGA skill under `.claude/skills/fpga`.
 
