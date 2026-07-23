@@ -129,6 +129,12 @@ Claude to build and program:
 > "Build the rv16 bitstream for the Nexys A7-100T using build_nexys_a7.tcl, then
 > program the connected board with program.tcl."
 
+## Step 6: Use this framework
+
+Here are two videos that will show you what you have setup with Claude:
+
+> Simple Problem:
+> Complex Problem:
 
 
 
