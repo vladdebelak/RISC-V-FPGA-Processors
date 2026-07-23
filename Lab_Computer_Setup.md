@@ -131,7 +131,7 @@ Claude to build and program:
 
 ## Step 6: Use this framework
 
-Here are two videos that will show you what you have setup with Claude:
+Here are two videos that will show you how to use what you have setup with Claude:
 
 - Simple Problem:
 - Complex Problem:
