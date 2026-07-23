@@ -77,7 +77,17 @@ Copy-Item -Recurse -Force `
   "$env:USERPROFILE\.claude\skills\fpga"
 ```
 
-You should now have `C:\Users\<you>\.claude\skills\fpga\SKILL.md`.
+You should now have `C:\Users\<you>\.claude\skills\fpga\SKILL.md`, where `<you>`
+is your Windows user-profile name.
+
+> **What is `$env:USERPROFILE`?** It's PowerShell shorthand for your own user
+> folder, `C:\Users\<your-name>`. You do **not** type your name — PowerShell fills
+> it in automatically, so the commands above work as-is. If you want to see what it
+> points to (e.g. you forgot your profile name), run:
+> ```powershell
+> echo $env:USERPROFILE
+> ```
+> It prints something like `C:\Users\jsmith` — that `jsmith` is your `<you>`.
 
 ---
 
