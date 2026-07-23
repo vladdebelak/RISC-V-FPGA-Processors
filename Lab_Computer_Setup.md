@@ -120,19 +120,15 @@ no matter which board you target.
 
 ## Step 6: Build a bitstream for the Nexys A7-100T (hardware only)
 
-The repo ships Basys 3 constraints plus a **Nexys A7-100T** constraints file at
-`verilog/rv16/constraints/nexys_a7.xdc`. To target the Nexys A7, edit
-`verilog/rv16/scripts/build_bitstream.tcl` and change two lines:
+The repo ships a ready-made Nexys A7-100T build script,
+`verilog/rv16/scripts/build_nexys_a7.tcl` (already set to part
+`xc7a100tcsg324-1` and `constraints/nexys_a7.xdc`) — nothing to edit. Just ask
+Claude to build and program:
 
-```tcl
-set part       xc7a100tcsg324-1          ;# was: xc7a35tcpg236-1
-set xdc_file   ./constraints/nexys_a7.xdc ;# was: ./constraints/basys3.xdc
-```
-
-Then ask Claude to build and program:
-
-> "Build the rv16 bitstream for the Nexys A7-100T using build_bitstream.tcl, then
+> "Build the rv16 bitstream for the Nexys A7-100T using build_nexys_a7.tcl, then
 > program the connected board with program.tcl."
+
+(The original `build_bitstream.tcl` still targets the Basys 3 if you ever need it.)
 
 `program.tcl` auto-selects the board on the JTAG chain, so no device name needs
 editing. The board must be connected via USB, powered on, and have Vivado cable
