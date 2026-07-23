@@ -133,8 +133,8 @@ Claude to build and program:
 
 Here are two videos that will show you what you have setup with Claude:
 
-> Simple Problem:
-> Complex Problem:
+- Simple Problem:
+- Complex Problem:
 
 
 
