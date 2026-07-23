@@ -1,20 +1,151 @@
-# Setting Up Your Lab Computers to Program FPGA Boards with Claude
+# Lab Computer Setup for FPGA Programming with Claude
 
-This is a step by step instructions to get your lab computers setup to be able to use Claude-Code to program FPGA boards.
-Note: If you are not using the same lab computer each week you will have to do these steps again 
+Target board: **Digilent Nexys A7-100T** (Xilinx Artix-7 `XC7A100T-1CSG324C`)
+Design: **rv16** (16-bit RISC-V MCU)
 
-1. You should already have Vivado, Git, Python and Claude installed, the only thing left to install is SymbiYosys + Z3
-   - Download the latest windows version from: https://github.com/YosysHQ/oss-cad-suite-build/releases
-   - Open up Windows Powershell and run: `<oss-cad-suite>\environment.bat`
+> **Note:** If you do not use the same lab computer each week, repeat these steps
+> each session. Steps 1–2 are one-time-per-machine *if* the PATH edits persist
+> (see Step 1); Step 4 (Claude login) may need repeating on shared machines.
 
-2. Now you will have to setup your Claude account
-   - In windows powershell run: `claude`
-   - After you ou choose your initial light setting, it will take you to their website where you will have to create your account
-   - After you have created your accout and chosen a plan, you can go back to Windows Powershell and use Claude-Code
+---
 
-3. Now you will have to set up Claude to be able to program the FPGA boards
-   - First we need to give Claude the FPGA skill, tell Claude to, "Clone the skill into my account from this github repo: https://github.com/vladdebelak/RISC-V-FPGA-Processors"
-   - Now we need to ensure Claude has testbenches to be able to debug code, tell claude to, "Clone the testbenches for this github repo: https://github.com/vladdebelak/RISC-V-FPGA-Processors for a 16 bit Nexys A7 board"
+## Before you start — prerequisites
 
+These are assumed already installed on the lab machines. Verify each in
+**Windows PowerShell** — if any command is "not recognized," fix it before going on:
 
+```powershell
+git --version         # Git
+python --version      # Python 3
+xvlog --version       # Vivado simulator  <-- MOST IMPORTANT, see Step 1
+```
 
+`xvlog` is the Vivado simulator and is what the simulation-first workflow runs on.
+If `xvlog` is missing, see **Step 1**.
+
+---
+
+## Step 1: Put Vivado on your PATH (required for simulation)
+
+The whole test-driven workflow runs on Vivado's simulator (`xvlog` / `xelab` /
+`xsim`). Vivado being *installed* is not enough — its `bin` folder must be on
+your PATH.
+
+1. Test it: `xvlog --version`
+2. If that works, skip to Step 2.
+3. If "not recognized," find your Vivado `bin`, e.g.
+   `C:\Xilinx\Vivado\<version>\bin`, and either:
+   - **Per session:** run `& "C:\Xilinx\Vivado\<version>\settings64.bat"` in the
+     shell before launching Claude, **or**
+   - **Persistent (recommended for lab machines):** add that `bin` folder to your
+     user PATH (Settings → Environment Variables → Path → New), then open a
+     **new** PowerShell and re-test `xvlog --version`.
+
+---
+
+## Step 2: Install SymbiYosys + Z3 (required for formal verification)
+
+Vivado, Git, Python, and Claude should already be installed — the only extra
+tool is the OSS CAD Suite (SymbiYosys + Yosys + Z3).
+
+1. Download the latest Windows build:
+   https://github.com/YosysHQ/oss-cad-suite-build/releases
+2. Extract it, e.g. to `C:\oss-cad-suite`.
+3. **Make it persistent** (do NOT just run `environment.bat` — that only affects
+   one shell and is lost when the window closes). Add these two folders to your
+   user PATH:
+   - `C:\oss-cad-suite\bin`
+   - `C:\oss-cad-suite\lib`
+4. Open a **new** PowerShell and verify:
+   ```powershell
+   sby --version
+   yosys --version
+   ```
+
+> If you prefer not to edit PATH, run `C:\oss-cad-suite\environment.bat` and then
+> launch `claude` **from that same window** so Claude inherits the tools. You must
+> redo this every session.
+
+---
+
+## Step 3: Get the project + skill
+
+Clone the repository. It contains **both** the project (RTL, testbenches,
+constraints) **and** the Claude FPGA skill under `.claude/skills/fpga`.
+
+```powershell
+cd $env:USERPROFILE
+git clone https://github.com/vladdebelak/RISC-V-FPGA-Processors.git
+```
+
+Install the skill into your Claude account so it is available in every project:
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills" | Out-Null
+Copy-Item -Recurse -Force `
+  "$env:USERPROFILE\RISC-V-FPGA-Processors\.claude\skills\fpga" `
+  "$env:USERPROFILE\.claude\skills\fpga"
+```
+
+You should now have `C:\Users\<you>\.claude\skills\fpga\SKILL.md`.
+
+---
+
+## Step 4: Set up your Claude account
+
+1. In PowerShell, run: `claude`
+2. Pick your color theme; it opens a browser to create/log into your account.
+3. After creating your account and choosing a plan, return to PowerShell — you
+   are now in Claude Code.
+4. **Restart Claude Code once** (exit and run `claude` again) so it loads the
+   `fpga` skill you installed in Step 3.
+
+Confirm the skill loaded by asking Claude: `what skills do you have?` — you should
+see **fpga** listed.
+
+---
+
+## Step 5: Run the simulation-first workflow
+
+From inside the repo, tell Claude what you want, e.g.:
+
+> "Work in `RISC-V-FPGA-Processors/verilog/rv16`. Follow the simulation-first
+> workflow in the fpga skill: write/extend self-checking testbenches, run them
+> with xsim, and make all tests pass before any synthesis."
+
+Simulation and formal verification are **board-independent** — they work the same
+no matter which board you target.
+
+---
+
+## Step 6: Build a bitstream for the Nexys A7-100T (hardware only)
+
+The repo ships Basys 3 constraints plus a **Nexys A7-100T** constraints file at
+`verilog/rv16/constraints/nexys_a7.xdc`. To target the Nexys A7, edit
+`verilog/rv16/scripts/build_bitstream.tcl` and change two lines:
+
+```tcl
+set part       xc7a100tcsg324-1          ;# was: xc7a35tcpg236-1
+set xdc_file   ./constraints/nexys_a7.xdc ;# was: ./constraints/basys3.xdc
+```
+
+Then ask Claude to build and program:
+
+> "Build the rv16 bitstream for the Nexys A7-100T using build_bitstream.tcl, then
+> program the connected board with program.tcl."
+
+`program.tcl` auto-selects the board on the JTAG chain, so no device name needs
+editing. The board must be connected via USB, powered on, and have Vivado cable
+drivers installed.
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `xvlog`/`xsim` not recognized | Vivado not on PATH — see Step 1. |
+| `sby`/`yosys` not recognized | OSS CAD Suite not on PATH — see Step 2. |
+| Claude doesn't list the `fpga` skill | Skill not copied, or Claude Code not restarted — see Steps 3–4. |
+| Board not detected by `program.tcl` | Cable drivers missing, board off, or a power-only USB cable. |
+| Wrong LEDs / clock on hardware | Verify `nexys_a7.xdc` pins against the official Digilent Nexys A7-100T Master XDC. |
