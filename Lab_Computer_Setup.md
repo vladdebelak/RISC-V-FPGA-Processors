@@ -50,10 +50,6 @@ The only extra tool beyond the lab image is the OSS CAD Suite (SymbiYosys + Yosy
    sby --version
    yosys --version
    ```
-5. Launch Claude **from this same window** (Step 3) so it inherits the tools:
-   ```powershell
-   claude
-   ```
 
 > The environment script only affects the window you run it in, and its effect is
 > gone when you close that window. So each session: run `environment.bat`, then
