@@ -4,49 +4,32 @@ Target board: **Digilent Nexys A7-100T** (Xilinx Artix-7 `XC7A100T-1CSG324C`)
 Design: **rv16** (16-bit RISC-V MCU)
 
 > **Note:** If you do not use the same lab computer each week, repeat these steps
-> each session. Steps 1–2 are one-time-per-machine *if* the PATH edits persist
-> (see Step 1); Step 4 (Claude login) may need repeating on shared machines.
+> each session. Step 1 (OSS CAD Suite) is one-time-per-machine *if* the PATH edit
+> persists; Step 3 (Claude login) may need repeating on shared machines.
 
 ---
 
 ## Before you start — prerequisites
 
-These are assumed already installed on the lab machines. Verify each in
-**Windows PowerShell** — if any command is "not recognized," fix it before going on:
+Vivado, Git, Python, and Claude are already installed on the lab machines, and
+**Vivado is already on the PATH**, so its simulator (`xvlog` / `xelab` / `xsim`)
+just works. A quick sanity check in **Windows PowerShell** (all three should print
+a version):
 
 ```powershell
 git --version         # Git
 python --version      # Python 3
-xvlog --version       # Vivado simulator  <-- MOST IMPORTANT, see Step 1
+xvlog --version       # Vivado simulator (runs the simulation-first workflow)
 ```
 
-`xvlog` is the Vivado simulator and is what the simulation-first workflow runs on.
-If `xvlog` is missing, see **Step 1**.
+The only tool you still need to install is the OSS CAD Suite — see Step 1.
 
 ---
 
-## Step 1: Put Vivado on your PATH (required for simulation)
+## Step 1: Install SymbiYosys + Z3 (required for formal verification)
 
-The whole test-driven workflow runs on Vivado's simulator (`xvlog` / `xelab` /
-`xsim`). Vivado being *installed* is not enough — its `bin` folder must be on
-your PATH.
-
-1. Test it: `xvlog --version`
-2. If that works, skip to Step 2.
-3. If "not recognized," find your Vivado `bin`, e.g.
-   `C:\Xilinx\Vivado\<version>\bin`, and either:
-   - **Per session:** run `& "C:\Xilinx\Vivado\<version>\settings64.bat"` in the
-     shell before launching Claude, **or**
-   - **Persistent (recommended for lab machines):** add that `bin` folder to your
-     user PATH (Settings → Environment Variables → Path → New), then open a
-     **new** PowerShell and re-test `xvlog --version`.
-
----
-
-## Step 2: Install SymbiYosys + Z3 (required for formal verification)
-
-Vivado, Git, Python, and Claude should already be installed — the only extra
-tool is the OSS CAD Suite (SymbiYosys + Yosys + Z3).
+The only extra tool beyond the lab image is the OSS CAD Suite (SymbiYosys + Yosys
++ Z3).
 
 1. Download the latest Windows build:
    https://github.com/YosysHQ/oss-cad-suite-build/releases
@@ -68,7 +51,7 @@ tool is the OSS CAD Suite (SymbiYosys + Yosys + Z3).
 
 ---
 
-## Step 3: Get the project + skill
+## Step 2: Get the project + skill
 
 Clone the repository. It contains **both** the project (RTL, testbenches,
 constraints) **and** the Claude FPGA skill under `.claude/skills/fpga`.
@@ -91,21 +74,21 @@ You should now have `C:\Users\<you>\.claude\skills\fpga\SKILL.md`.
 
 ---
 
-## Step 4: Set up your Claude account
+## Step 3: Set up your Claude account
 
 1. In PowerShell, run: `claude`
 2. Pick your color theme; it opens a browser to create/log into your account.
 3. After creating your account and choosing a plan, return to PowerShell — you
    are now in Claude Code.
 4. **Restart Claude Code once** (exit and run `claude` again) so it loads the
-   `fpga` skill you installed in Step 3.
+   `fpga` skill you installed in Step 2.
 
 Confirm the skill loaded by asking Claude: `what skills do you have?` — you should
 see **fpga** listed.
 
 ---
 
-## Step 5: Run the simulation-first workflow
+## Step 4: Run the simulation-first workflow
 
 From inside the repo, tell Claude what you want, e.g.:
 
@@ -118,7 +101,7 @@ no matter which board you target.
 
 ---
 
-## Step 6: Build a bitstream for the Nexys A7-100T (hardware only)
+## Step 5: Build a bitstream for the Nexys A7-100T (hardware only)
 
 The repo ships a ready-made Nexys A7-100T build script,
 `verilog/rv16/scripts/build_nexys_a7.tcl` (already set to part
@@ -140,8 +123,7 @@ drivers installed.
 
 | Symptom | Fix |
 |---|---|
-| `xvlog`/`xsim` not recognized | Vivado not on PATH — see Step 1. |
-| `sby`/`yosys` not recognized | OSS CAD Suite not on PATH — see Step 2. |
-| Claude doesn't list the `fpga` skill | Skill not copied, or Claude Code not restarted — see Steps 3–4. |
+| `sby`/`yosys` not recognized | OSS CAD Suite not on PATH — see Step 1. |
+| Claude doesn't list the `fpga` skill | Skill not copied, or Claude Code not restarted — see Steps 2–3. |
 | Board not detected by `program.tcl` | Cable drivers missing, board off, or a power-only USB cable. |
 | Wrong LEDs / clock on hardware | Verify `nexys_a7.xdc` pins against the official Digilent Nexys A7-100T Master XDC. |
