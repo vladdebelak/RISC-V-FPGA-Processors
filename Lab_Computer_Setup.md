@@ -111,16 +111,13 @@ see **fpga** listed.
 
 ## Step 4: Run the simulation-first workflow
 
-From inside the repo, tell Claude what you want, e.g.:
+From inside the repo, tell Claude:
 
 > "Work in `RISC-V-FPGA-Processors/verilog/rv16`. Follow the simulation-first
 > workflow in the fpga skill: write/extend self-checking testbenches, run them
 > with xsim, and make all tests pass before any synthesis."
 
-Simulation and formal verification are **board-independent** — they work the same
-no matter which board you target.
 
----
 
 ## Step 5: Build a bitstream for the Nexys A7-100T (hardware only)
 
@@ -132,19 +129,6 @@ Claude to build and program:
 > "Build the rv16 bitstream for the Nexys A7-100T using build_nexys_a7.tcl, then
 > program the connected board with program.tcl."
 
-(The original `build_bitstream.tcl` still targets the Basys 3 if you ever need it.)
 
-`program.tcl` auto-selects the board on the JTAG chain, so no device name needs
-editing. The board must be connected via USB, powered on, and have Vivado cable
-drivers installed.
 
----
 
-## Troubleshooting
-
-| Symptom | Fix |
-|---|---|
-| `sby`/`yosys` not recognized | Run `C:\oss-cad-suite\environment.bat` in this window (and launch `claude` from it) — see Step 1. |
-| Claude doesn't list the `fpga` skill | Skill not copied, or Claude Code not restarted — see Steps 2–3. |
-| Board not detected by `program.tcl` | Cable drivers missing, board off, or a power-only USB cable. |
-| Wrong LEDs / clock on hardware | Verify `nexys_a7.xdc` pins against the official Digilent Nexys A7-100T Master XDC. |
