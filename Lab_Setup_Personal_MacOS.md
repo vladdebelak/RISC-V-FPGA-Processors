@@ -22,6 +22,10 @@ This is how you can work on programming FPGA Boards from your personal MacOS mac
    - Run this command in the terminal to instal Node.js: `brew install node`
    - Now run: `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash`
    - Now to install Claude-Code run: `npm install -g @anthropic-ai/claude-code`
+   - In the terminal run: `nano ~/.profile`
+     - Add the following line: `export PATH=~/.npm-global/bin:$PATH`
+     - To save press `CTRL + X`, then `Y` and then press `ENTER`
+     - Now run: `source ~/.profile`
 
 5. Install SymbiYosys + Z3
    - Run these commands to install Yosys and Z3: `brew install yosys`, and `brew install z3`,
