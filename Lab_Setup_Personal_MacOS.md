@@ -40,3 +40,10 @@ This is how you can work on programming FPGA Boards from your personal MacOS mac
 6. Now you can follow [Lab_Computer_Setup.md](https://github.com/vladdebelak/RISC-V-FPGA-Processors/blob/main/Lab_Computer_Setup.md) to finish the setup and get started.
 
    - Note: Since you already have installed SymbiYosys + Z3 and put it in the path, ignore Step 1 from [Lab_Computer_Setup.md](https://github.com/vladdebelak/RISC-V-FPGA-Processors/blob/main/Lab_Computer_Setup.md)
+   - Note: Step 2 will be different on MacOS, instead use the following commands:
+     - `cd ~`
+     - `git clone https://github.com/vladdebelak/RISC-V-FPGA-Processors.git`
+     - `mkdir -p ~/.claude/skills`
+     - `cp -R ~/RISC-V-FPGA-Processors/.claude/skills/fpga ~/.claude/skills/fpga`
+
+
