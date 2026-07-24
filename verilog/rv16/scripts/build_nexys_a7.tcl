@@ -2,7 +2,7 @@
 # Same flow as build_bitstream.tcl, targeting the Digilent Nexys A7-100T (XC7A100T-1CSG324C).
 # Usage (run from verilog/rv16):  vivado -mode batch -source scripts/build_nexys_a7.tcl
 
-set proj_name  rv16_mcu_nexys_a7
+set proj_name  rv16_mcu
 set part       xc7a100tcsg324-1
 set top        rv16_top
 set src_dir    ./rtl
