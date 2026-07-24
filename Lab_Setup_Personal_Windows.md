@@ -29,4 +29,14 @@ This is how you can work on programming FPGA Boards from your personal windows m
      - Creat a new path and put: 'C:\Users\USERPROFRILE\.local\bin'
         - Note the USERPROFILE is what shows up after `C:\Users\` in Windows Powershell
 
-6. Now you can follow [Lab_Computer_Setup.md](https://github.com/vladdebelak/RISC-V-FPGA-Processors/blob/main/Lab_Computer_Setup.md) to finish the setup and get started.
+6. Install SymbiYosys + Z3
+   - Download the latest Windows build: https://github.com/YosysHQ/oss-cad-suite-build/releases
+   - Now you have to add it to your path:
+     - Search for "Edit the System Environment Variables" in the start menu
+     - Click the "Environment Variable" button
+     - Under the "User Variables" section edit the "Path"
+     - Creat a new path and put: 'C:\oss-cad-suite\bin'
+
+8. Now you can follow [Lab_Computer_Setup.md](https://github.com/vladdebelak/RISC-V-FPGA-Processors/blob/main/Lab_Computer_Setup.md) to finish the setup and get started.
+
+   - Note: Since you already have installed SymbiYosys + Z3 and put it in the path, ignore Step 1 from [Lab_Computer_Setup.md](https://github.com/vladdebelak/RISC-V-FPGA-Processors/blob/main/Lab_Computer_Setup.md)
