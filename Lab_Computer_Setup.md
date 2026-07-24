@@ -117,7 +117,7 @@ From inside the repo, tell Claude:
 > workflow in the fpga skill: write/extend self-checking testbenches, run them
 > with xsim, and make all tests pass before any synthesis."
 
-
+Note: Steps 4 and 5 are for actually creating a program, in Step 4 include what you want your program to be and then Step 5 is how you will deply the program.
 
 ## Step 5: Build a bitstream for the Nexys A7-100T (hardware only)
 
@@ -128,6 +128,8 @@ Claude to build and program:
 
 > "Build the rv16 bitstream for the Nexys A7-100T using build_nexys_a7.tcl, then
 > program the connected board with program.tcl."
+
+Note: Steps 4 and 5 are for actually creating a program, in Step 4 include what you want your program to be and then Step 5 is how you will deply the program. 
 
 ## Step 6: Use this framework
 
