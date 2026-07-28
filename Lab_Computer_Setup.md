@@ -4,8 +4,7 @@ Target board: **Digilent Nexys A7-100T** (Xilinx Artix-7 `XC7A100T-1CSG324C`)
 Design: **rv16** (16-bit RISC-V MCU)
 
 > **Note:** If you do not use the same lab computer each week, repeat these steps
-> each session. The OSS CAD Suite *install* is one-time per machine, but its
-> `environment.bat` must be run every session (Step 1), and Step 3 (Claude login)
+> each session. The OSS CAD Suite *install* is one-time per machine but Step 2 (Claude login)
 > may need repeating on shared machines.
 
 ---
@@ -27,29 +26,6 @@ The only tool you still need to install is the OSS CAD Suite — see Step 1.
 
 ---
 
-## Step 1: Install SymbiYosys + Z3 (required for formal verification)
-
-The only extra tool beyond the lab image is the OSS CAD Suite (SymbiYosys + Yosys
-+ Z3).
-
-**One-time install (per machine):**
-
-1. Download the latest Windows build:
-   https://github.com/YosysHQ/oss-cad-suite-build/releases
-2. Extract it, e.g. to `C:\oss-cad-suite`. The extracted files stay on disk — you
-   do not reinstall each session.
-
-**Every session** (this is how you make the tools available — no PATH editing):
-
-3. Open **Windows PowerShell** and run the environment script:
-   ```powershell
-   C:\oss-cad-suite\environment.bat
-   ```
-4. Verify in that **same** window:
-   ```powershell
-   sby --version
-   yosys --version
-   ```
 
 > The environment script only affects the window you run it in, and its effect is
 > gone when you close that window. So each session: run `environment.bat`, then
@@ -58,20 +34,16 @@ The only extra tool beyond the lab image is the OSS CAD Suite (SymbiYosys + Yosy
 
 ---
 
-## Step 2: Get the project + skill
+## Step 1: Get the project + skill
 
-Run all commands in this step in the **same Windows PowerShell window** you used in
-Step 1.
+Open up **Windows PowerShell** and run the following commands to give Claude the FPGA skill:
 
-Clone the repository. It contains **both** the project (RTL, testbenches,
-constraints) **and** the Claude FPGA skill under `.claude/skills/fpga`.
 
 ```powershell
 cd $env:USERPROFILE
 git clone https://github.com/vladdebelak/RISC-V-FPGA-Processors.git
 ```
 
-Install the skill into your Claude account so it is available in every project:
 
 ```powershell
 New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills" | Out-Null
@@ -85,18 +57,12 @@ is your Windows user-profile name.
 
 > **What is `$env:USERPROFILE`?** It's PowerShell shorthand for your own user
 > folder, `C:\Users\<your-name>`. You do **not** type your name — PowerShell fills
-> it in automatically, so the commands above work as-is. If you want to see what it
-> points to (e.g. you forgot your profile name), run:
-> ```powershell
-> echo $env:USERPROFILE
-> ```
-> It prints something like `C:\Users\jsmith` — that `jsmith` is your `<you>`.
-
+> it in automatically, so the commands above work as-is. 
 ---
 
-## Step 3: Set up your Claude account
+## Step 2: Set up your Claude account
 
-1. In the **same PowerShell window** where you ran `environment.bat` (Step 1),
+1. In the **same PowerShell window** you used in Step 1,
    run: `claude`
 2. Pick your color theme; it opens a browser to create/log into your account.
 3. After creating your account and choosing a plan, return to PowerShell — you
@@ -109,29 +75,43 @@ see **fpga** listed.
 
 ---
 
-## Step 4: Run the simulation-first workflow
+## Step 3: Install SymbiYosys + Z3 (required for formal verification)
 
-From inside the repo, tell Claude:
+The only extra tool beyond the lab image is the OSS CAD Suite (SymbiYosys + Yosys
++ Z3). To install SymbiYosys + Z3 tell Claude:
 
-> "Work in `RISC-V-FPGA-Processors/verilog/rv16`. Follow the simulation-first
-> workflow in the fpga skill: write/extend self-checking testbenches, run them
-> with xsim, and make all tests pass before any synthesis."
+>"Install SymbiYosys + Z3 from: https://github.com/YosysHQ/oss-cad-suite-build/releases and put it onto my user path"
 
-Note: Steps 4 and 5 are for actually creating a program, in Step 4 include what you want your program to be and then Step 5 is how you will deply the program.
+Claude will install SymbiYosys + Z3 for you and put it onto your user path so that you can use it in the future as long as you are using the same computer.
 
-## Step 5: Build a bitstream for the Nexys A7-100T (hardware only)
+---
 
-The repo ships a ready-made Nexys A7-100T build script,
-`verilog/rv16/scripts/build_nexys_a7.tcl` (already set to part
-`xc7a100tcsg324-1` and `constraints/nexys_a7.xdc`) — nothing to edit. Just ask
-Claude to build and program:
+## Step 4: Use Claude-Code to create code for the FPGA
 
-> "Build the rv16 bitstream for the Nexys A7-100T using build_nexys_a7.tcl, then
-> program the connected board with program.tcl."
+- Go to your Documents File and create a new folder where you want Claude to put the code
+- Go back to the terminal and tell Claude:
+  
+  > "/fpga In Documents>FolderName for a 16 but Nexys A7 board 
+  > create a design and constraint file that programs the board to: (whatever you want the board to do).
+  > Write self-checking test benches."
 
-Note: Steps 4 and 5 are for actually creating a program, in Step 4 include what you want your program to be and then Step 5 is how you will deply the program. 
+Note: You generally want to tell Claude where you want the code, what kind of board is being used (in this lab it is a 16 but Nexys A7), the kind of files you need (you will always need a design and constraint file, Claude will also include a simulation file as well in your folder), what you want the program to do, and that Claude needs to use self-checking test benches so that it can check that the code works.
 
-## Step 6: Use this framework
+---
+
+## Step 5: Put the created code into Vivado 
+
+You should be able to look inside your folder and see the code that Claude has created. 
+
+- Open up Vivado and add the files Claude created
+- Generate the Bitstream
+- Program the Board
+
+Note: Watch the videos in Step 6 for more detailed instructions. 
+
+ ---
+
+## Step 6: Instruction videos on how to use this framework
 
 Here are two videos that will show you how to use what you have setup with Claude:
 
