@@ -3,7 +3,7 @@
 This is how you can work on programming FPGA Boards from your personal windows machine
 
 1. Install Vivado
-   - Use these instructions: [Vivado Installation Instruction](Desktop/VivadoInstallation2020_1.pdf)
+   - Use these instructions: [Vivado Installation Instruction](Main/VivadoInstallation2020_1.pdf)
      
 2. Install Git Bash
    - Download the Git for Windows/x64 Setup from: https://git-scm.com/install/windows
