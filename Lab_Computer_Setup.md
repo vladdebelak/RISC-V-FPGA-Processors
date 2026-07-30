@@ -115,8 +115,11 @@ Note: Watch the videos in Step 6 for more detailed instructions.
 
 Here are two videos that will show you how to use what you have setup with Claude:
 
-- Simple Problem: https://youtu.be/MugMniXK1BQ
-- Complex Problem: https://youtu.be/kJRBA2rNGUs
+### Simple Problem
 
+[![Simple Problem](http://i.ytimg.com/vi/MugMniXK1BQ/hqdefault.jpg)](https://www.youtube.com/watch?v=MugMniXK1BQ)
 
+### Complex Problem
+
+[![Complex Problem](http://i.ytimg.com/vi/kJRBA2rNGUs/hqdefault.jpg)](https://www.youtube.com/watch?v=kJRBA2rNGUs)
 
