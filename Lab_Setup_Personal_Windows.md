@@ -39,4 +39,4 @@ This is how you can work on programming FPGA Boards from your personal windows m
 
 7. Now you can follow [Lab_Computer_Setup.md](https://github.com/vladdebelak/RISC-V-FPGA-Processors/blob/main/Lab_Computer_Setup.md) to finish the setup and get started.
 
-   - Note: Since you already have installed SymbiYosys + Z3 and put it in the path, ignore Step 1 from [Lab_Computer_Setup.md](https://github.com/vladdebelak/RISC-V-FPGA-Processors/blob/main/Lab_Computer_Setup.md)
+   - Note: Since you already have installed SymbiYosys + Z3 and put it in the path, ignore Step 3 from [Lab_Computer_Setup.md](https://github.com/vladdebelak/RISC-V-FPGA-Processors/blob/main/Lab_Computer_Setup.md)
