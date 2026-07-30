@@ -116,7 +116,7 @@ Note: Watch the videos in Step 6 for more detailed instructions.
 Here are two videos that will show you how to use what you have setup with Claude:
 
 - Simple Problem: https://youtu.be/MugMniXK1BQ
-- Complex Problem: https://unmm-my.sharepoint.com/:v:/r/personal/vdebelak_unm_edu/Documents/Attachments/Complex%20Example.mp4?csf=1&web=1&e=Pzv7I3&nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJTdHJlYW1XZWJBcHAiLCJyZWZlcnJhbFZpZXciOiJTaGFyZURpYWxvZy1MaW5rIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXcifX0%3D
+- Complex Problem: https://youtu.be/kJRBA2rNGUs
 
 
 
