@@ -3,7 +3,8 @@
 This is how you can work on programming FPGA Boards from your personal MacOS machine
 
 1. Install Vivado
-   - Use these instructions:
+   - Use these instructions: [Vivado Installation Instructions](https://github.com/vladdebelak/RISC-V-FPGA-Processors/blob/main/VivadoInstallation2020_1.pdf)
+   - Note: To install Vivado on Mac you will need a windows emulator 
 
 2. Install Git Bash
    - Opent the terminal
