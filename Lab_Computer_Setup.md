@@ -123,3 +123,8 @@ Here are two videos that will show you how to use what you have setup with Claud
 
 [![Complex Problem](http://i.ytimg.com/vi/kJRBA2rNGUs/hqdefault.jpg)](https://www.youtube.com/watch?v=kJRBA2rNGUs)
 
+### Processor Problem
+
+[![Processor Problem](https://youtu.be/jhVmx8jd1ZE)](https://youtu.be/jhVmx8jd1ZE)
+
+
